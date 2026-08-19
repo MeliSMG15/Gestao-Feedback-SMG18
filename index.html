@@ -1,0 +1,2463 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestão de Feedback · MELI SMG18</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cellipse cx='32' cy='32' rx='30' ry='28' fill='%23FFE600'/%3E%3Ctext x='32' y='28' text-anchor='middle' font-family='Arial Black,sans-serif' font-weight='900' font-size='15' fill='%232D3277'%3ESMG%3C/text%3E%3Ctext x='32' y='46' text-anchor='middle' font-family='Arial Black,sans-serif' font-weight='900' font-size='15' fill='%232D3277'%3E18%3C/text%3E%3C/svg%3E">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Topbar escura ML */
+  --topbar-bg: #131b33;
+  --topbar-text: #ffffff;
+  --topbar-border: #2c3a60;
+  --meli-yellow: #FFE600;
+  --meli-dark: #2D3277;
+
+  /* Conteúdo claro */
+  --bg: #f1f5fb;
+  --surface: #ffffff;
+  --surface2: #f7fafd;
+  --surface3: #e8eef7;
+  --border: #d3dde9;
+  --border2: #b8c6d7;
+  --text: #1a2d4f;
+  --text2: #45597a;
+  --text3: #768aa8;
+  --accent: #1e6ae0;
+  --accent2: #3483FA;
+  --green: #0f7b3f;
+  --green2: #16a34a;
+  --red: #c2261d;
+  --yellow: #b97e09;
+  --purple: #5a39c0;
+  --cyan: #0d7a87;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: 'DM Mono', monospace; font-variant-numeric: tabular-nums; }
+
+/* ── TOPBAR ── */
+.topbar {
+  background: var(--topbar-bg);
+  border-top: 3px solid var(--meli-yellow);
+  color: var(--topbar-text);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand-icon {
+  width: 44px; height: 38px;
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 2px 4px rgba(255,230,0,0.30));
+}
+.brand-icon svg { display: block; }
+.brand-name { font-weight: 800; font-size: 16px; letter-spacing: -0.3px; }
+.brand-sub { font-size: 11px; color: rgba(255,255,255,0.6); font-family: 'DM Mono', monospace; letter-spacing: 0.4px; }
+.tabs { display: flex; gap: 4px; }
+.tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: rgba(255,255,255,0.72);
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s;
+  position: relative;
+}
+.tab-btn:hover:not(.active) { color: #fff; background: rgba(255,255,255,0.06); }
+.tab-btn.active { color: #fff; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.14); }
+.tab-btn.active::after {
+  content: '';
+  position: absolute; left: 14px; right: 14px; bottom: -1px;
+  height: 2px; background: var(--meli-yellow); border-radius: 2px;
+}
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.online-pill {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px; font-family: 'DM Mono', monospace; color: rgba(255,255,255,0.72);
+  padding: 6px 12px; border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04);
+}
+.online-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #6b7d99; transition: background 0.3s;
+}
+.topbar-btn {
+  font-size: 11px; font-family: 'DM Mono', monospace;
+  padding: 7px 14px; border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06); color: #fff;
+  cursor: pointer; transition: all 0.15s;
+}
+.topbar-btn:hover { background: rgba(255,255,255,0.12); }
+.auth-user { display: none; align-items: center; gap: 10px; padding: 4px 10px 4px 4px; border-radius: 22px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); }
+.auth-user img { width: 26px; height: 26px; border-radius: 50%; }
+.auth-user .nm { font-size: 12px; font-family: 'DM Mono', monospace; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── CONTAINER ── */
+.main { padding: 24px; max-width: 1500px; margin: 0 auto; }
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── PAGE TITLE ── */
+.page-title {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--meli-yellow);
+  border-radius: 12px;
+  padding: 18px 24px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.page-title h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.4px; color: var(--text); }
+.page-title .sub { font-size: 12px; color: var(--text2); margin-top: 2px; font-family: 'DM Mono', monospace; }
+
+/* ── PANELS / CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(30, 60, 110, 0.04);
+}
+
+/* ── KPI cards modernos ── */
+.kpi-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+@media (max-width: 1100px) { .kpi-cards { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px)  { .kpi-cards { grid-template-columns: 1fr; } }
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(30, 60, 110, 0.04);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(30, 60, 110, 0.10); }
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+}
+.kpi-card.total::before     { background: linear-gradient(90deg, #2D3277, #4a51a8); }
+.kpi-card.realizado::before { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.kpi-card.agendado::before  { background: linear-gradient(90deg, #2563eb, #60a5fa); }
+.kpi-card.pendente::before  { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.kpi-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.kpi-card.total    .kpi-icon { background: rgba(45,50,119,0.10); }
+.kpi-card.realizado .kpi-icon { background: rgba(22,163,74,0.10); }
+.kpi-card.agendado .kpi-icon { background: rgba(37,99,235,0.10); }
+.kpi-card.pendente .kpi-icon { background: rgba(217,119,6,0.10); }
+.kpi-content { flex: 1; min-width: 0; }
+.kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text3); font-weight: 700; margin-bottom: 4px; }
+.kpi-value { font-size: 32px; font-weight: 900; color: var(--text); line-height: 1.05; letter-spacing: -1px; margin-bottom: 4px; }
+.kpi-sub { font-size: 12px; color: var(--text2); font-weight: 500; margin-top: 6px; }
+.kpi-sub span { font-family: 'DM Mono', monospace; font-weight: 700; color: var(--text); }
+.kpi-mini { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.kpi-mini-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 6px;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.3px;
+  font-family: 'Inter', sans-serif;
+}
+.kpi-mini-tag strong { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 800; }
+.kpi-mini-tag.meli { background: #fff8c8; color: #8a6800; }
+.kpi-mini-tag.temp { background: #ece1ff; color: #5a39c0; }
+.kpi-progress { margin-top: 10px; height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+.kpi-progress-fill { height: 100%; background: linear-gradient(90deg, #16a34a, #4ade80); border-radius: 3px; transition: width 0.6s ease; }
+
+/* Botão grande */
+.btn.big { padding: 12px 24px; font-size: 14px; font-weight: 700; box-shadow: 0 4px 12px rgba(30, 106, 224, 0.20); }
+.btn.big:hover:not(:disabled) { box-shadow: 0 6px 16px rgba(30, 106, 224, 0.30); transform: translateY(-1px); }
+
+/* Toolbar do card 1:1 */
+.card-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.card-title-block { display: flex; flex-direction: column; }
+.section-title-inline { font-size: 15px; font-weight: 800; color: var(--text); }
+.card-subtitle { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; margin-top: 2px; }
+.card-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.filter-sm { padding: 6px 10px; font-size: 12px; }
+
+/* Tabela compacta de 1:1 */
+.next-table-wrap { max-height: 480px; overflow: auto; }
+.next-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.next-table thead th {
+  position: sticky; top: 0;
+  background: var(--surface2);
+  color: var(--text2);
+  font-weight: 700;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  z-index: 1;
+}
+.next-table tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.next-table tbody tr:hover td { background: var(--surface2); }
+.next-table tbody tr:last-child td { border-bottom: none; }
+.next-table .col-nome { font-weight: 600; color: var(--text); }
+.next-table .col-nome small { display: block; font-size: 10.5px; color: var(--text3); font-weight: 500; margin-top: 1px; }
+.next-table .badge-empresa {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.next-table .badge-empresa.MELI { background: #fff8c8; color: #8a6800; }
+.next-table .badge-empresa.GI   { background: #ece1ff; color: #5a39c0; }
+.next-table .badge-empresa.RAND { background: #d6f1f8; color: #0d7a87; }
+.next-table .badge-empresa.ADEC { background: #fde0dd; color: #c2261d; }
+.next-table .badge-empresa.CARP { background: #fee2e2; color: #991b1b; }
+.next-table .badge-empresa.PT   { background: #d1f4ee; color: #0d7a6b; }
+.next-table .badge-empresa.OTHER { background: var(--surface3); color: var(--text2); }
+.next-table .data-cell {
+  font-family: 'DM Mono', monospace; font-size: 11.5px;
+  padding: 3px 8px; border-radius: 5px;
+  display: inline-block;
+  background: var(--surface2); color: var(--text);
+}
+.next-table .data-cell.atrasado { background: #fde0dd; color: #c2261d; }
+.next-table .data-cell.hoje     { background: #fef3c7; color: #92400e; }
+.next-table .data-cell.realizado { background: #d6f4e2; color: #166534; }
+.next-table .actions-cell { white-space: nowrap; text-align: right; }
+.next-table .icon-btn {
+  background: transparent; border: 1px solid var(--border);
+  width: 28px; height: 28px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px; cursor: pointer; margin-left: 2px;
+  color: var(--text2);
+  transition: all 0.15s;
+  font-size: 13px;
+}
+.next-table .icon-btn:hover { background: var(--surface3); color: var(--text); transform: scale(1.08); }
+.next-table .icon-btn.realizar { color: var(--green); border-color: rgba(15,123,63,0.3); }
+.next-table .icon-btn.realizar:hover { background: rgba(15,123,63,0.10); }
+.next-table .icon-btn.danger { color: var(--red); border-color: rgba(194,38,29,0.3); }
+.next-table .icon-btn.danger:hover { background: rgba(194,38,29,0.06); }
+
+/* ── COMPARATIVO ── */
+.comp-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.comp-kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.comp-kpi .icon { font-size: 24px; }
+.comp-kpi .label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+.comp-kpi .value { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; font-family: 'DM Mono', monospace; }
+
+.comp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) { .comp-grid { grid-template-columns: 1fr; } }
+.comp-mini-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 3px rgba(30,60,110,0.04);
+}
+.comp-card-title {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border);
+}
+.comp-card-total {
+  font-size: 22px; font-weight: 800; color: var(--text);
+  font-family: 'DM Mono', monospace;
+}
+.comp-bars { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+.comp-bar-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+}
+.comp-bar-name {
+  color: var(--text); font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-align: right;
+}
+.comp-bar-track {
+  position: relative;
+  height: 24px;
+  background: var(--surface3);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.comp-bar-fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  border-radius: 5px 0 0 5px;
+  transition: width 0.5s ease;
+}
+.comp-bar-fill.alinhado       { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.comp-bar-fill.necessita      { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.comp-bar-fill.promocao       { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.comp-bar-fill.internalizacao { background: linear-gradient(90deg, #0891b2, #22d3ee); }
+.comp-bar-fill.atrasados      { background: linear-gradient(90deg, #c2261d, #f87171); }
+.comp-card-warn { border: 1px solid rgba(194,38,29,0.35); background: linear-gradient(to bottom, rgba(254,226,226,0.4), var(--surface)); }
+.comp-bar-val {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  font-family: 'DM Mono', monospace; font-weight: 800;
+  font-size: 12px; color: var(--text); z-index: 1;
+}
+.comp-empty { padding: 24px 16px; text-align: center; color: var(--text3); font-size: 13px; }
+
+/* Tabela cruzada */
+.comp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.comp-table thead th {
+  background: var(--surface2);
+  color: var(--text2);
+  font-weight: 700; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 12px 14px; text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.comp-table thead th:first-child { text-align: left; }
+.comp-table tbody td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+  font-family: 'DM Mono', monospace; font-weight: 700;
+}
+.comp-table tbody td:first-child { text-align: left; font-family: 'Inter', sans-serif; color: var(--text); }
+.comp-table tbody tr:hover td { background: var(--surface2); }
+.comp-table tbody tr.total-row td { background: var(--surface2); border-top: 2px solid var(--border2); font-weight: 800; }
+.comp-table tbody tr:last-child td { border-bottom: none; }
+.comp-table .cell-pct { font-size: 11px; color: var(--text3); font-weight: 500; display: block; margin-top: 2px; }
+.comp-table .cell-alinhado  { color: #16a34a; }
+.comp-table .cell-necessita { color: #d97706; }
+.comp-table .cell-promocao  { color: #7c3aed; }
+.comp-table .cell-internalizacao { color: #0891b2; }
+
+/* Section title geral */
+.section-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* PENDÊNCIAS — duas colunas (MELI / TEMP) */
+.pendencias-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+@media (max-width: 900px) { .pendencias-grid { grid-template-columns: 1fr; } }
+.pend-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.pend-card-header {
+  background: #1a1a1a;
+  color: #fff;
+  padding: 10px 14px;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.8px;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-shrink: 0;
+}
+.pend-card-header .count { background: rgba(255,255,255,0.18); padding: 2px 10px; border-radius: 12px; font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 700; }
+.pend-scroll {
+  max-height: 280px;
+  overflow-y: auto;
+}
+.pend-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pend-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--surface3); color: var(--text2);
+  font-weight: 700; padding: 7px 12px; text-align: left;
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.pend-table td { padding: 6px 12px; border-bottom: 1px solid var(--border); }
+.pend-table tbody tr:hover td { background: var(--surface2); }
+.pend-table tbody tr:last-child td { border-bottom: none; }
+.pend-empty { padding: 30px 20px; text-align: center; color: var(--text3); font-size: 13px; }
+
+/* CLASSIFICAÇÃO DE DESEMPENHO */
+.perf-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+.perf-header { text-align: center; margin-bottom: 14px; }
+.perf-header h2 { display: inline-block; font-size: 16px; font-weight: 800; padding: 8px 24px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; }
+.perf-body { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; align-items: center; background: var(--surface3); padding: 20px; border-radius: 10px; }
+@media (max-width: 800px) { .perf-body { grid-template-columns: 1fr; } }
+.perf-bars { display: flex; flex-direction: column; gap: 12px; }
+.perf-bar-row { display: grid; grid-template-columns: 200px 1fr; gap: 14px; align-items: center; }
+.perf-bar-label { font-size: 13px; color: var(--text); text-align: right; font-weight: 500; }
+.perf-bar {
+  position: relative; height: 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  --fill: 0%;
+}
+.perf-bar::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: var(--fill); border-radius: 5px 0 0 5px;
+  transition: width 0.6s ease;
+}
+.perf-bar.alinhado::before        { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.perf-bar.necessita::before       { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.perf-bar.promocao::before        { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+.perf-bar.internalizacao::before  { background: linear-gradient(90deg, #0891b2, #22d3ee); }
+.perf-bar .fill {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  font-weight: 800; font-size: 14px; color: var(--text);
+  z-index: 1; font-family: 'DM Mono', monospace;
+}
+.perf-pie { display: flex; align-items: center; justify-content: center; }
+.perf-pie canvas { max-width: 220px; }
+
+/* ── FORM (modais e inputs gerais) ── */
+.btn {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface2);
+  color: var(--text);
+  transition: all 0.15s;
+}
+.btn:hover:not(:disabled) { background: var(--surface3); border-color: var(--border2); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+.btn-ghost { background: transparent; }
+.btn-danger { background: var(--red); color: #fff; border-color: var(--red); }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(20, 35, 65, 0.55);
+  display: none; align-items: center; justify-content: center; z-index: 1000;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border-radius: 14px;
+  padding: 24px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal-title { font-size: 18px; font-weight: 800; margin-bottom: 16px; color: var(--text); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1/-1; }
+.form-group label { font-size: 12px; font-weight: 600; color: var(--text2); }
+.form-group input, .form-group select, .form-group textarea {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text);
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(30, 106, 224, 0.12);
+}
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+/* Filtros */
+.filter-input {
+  padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+  font-family: inherit; font-size: 13px; background: #fff; color: var(--text);
+}
+.filter-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(30,106,224,0.12); }
+
+/* Tabelas modernas — Agendamentos e Respostas */
+.data-table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table thead th {
+  background: var(--surface3);
+  color: var(--text2);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.data-table tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.data-table tbody tr:hover td { background: var(--surface2); }
+.data-table tbody tr:last-child td { border-bottom: none; }
+
+/* Status pills */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.3px;
+}
+.status-pill.AGENDADO  { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+.status-pill.REALIZADO { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+.status-pill.CANCELADO { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+.status-pill.ATRASADO  { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+
+/* Classificação pills */
+.class-pill {
+  display: inline-flex; align-items: center;
+  padding: 4px 10px; border-radius: 12px;
+  font-size: 11px; font-weight: 700;
+  border: 1px solid;
+}
+.class-pill.alinhado     { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+.class-pill.necessita    { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+.class-pill.promocao     { background: #ddd6fe; color: #5b21b6; border-color: #c4b5fd; }
+.class-pill.internalizacao { background: #cffafe; color: #155e75; border-color: #67e8f9; }
+
+/* Classificação radio buttons grandes */
+.class-radio {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px; font-weight: 600;
+  background: #fff;
+  transition: all 0.15s;
+}
+.class-radio:hover { border-color: var(--border2); background: var(--surface2); }
+.class-radio.selected { border-color: var(--accent); background: rgba(30,106,224,0.08); color: var(--accent); }
+.class-radio.selected.alinhado    { border-color: #16a34a; background: #d1fae5; color: #065f46; }
+.class-radio.selected.necessita   { border-color: #d97706; background: #fef3c7; color: #92400e; }
+.class-radio.selected.promocao    { border-color: #7c3aed; background: #ddd6fe; color: #5b21b6; }
+.class-radio.selected.internalizacao { border-color: #0891b2; background: #cffafe; color: #155e75; }
+.class-radio input { display: none; }
+
+/* Action buttons na tabela */
+.action-btn {
+  background: transparent; border: 1px solid var(--border);
+  padding: 6px 10px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-weight: 600; color: var(--text2);
+  transition: all 0.15s;
+}
+.action-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+.action-btn.primary { color: var(--accent); border-color: rgba(30,106,224,0.4); }
+.action-btn.primary:hover { background: rgba(30,106,224,0.08); }
+.action-btn.danger  { color: var(--red); border-color: rgba(194,38,29,0.4); }
+.action-btn.danger:hover { background: rgba(194,38,29,0.06); }
+.action-btn.success { color: var(--green); border-color: rgba(15,123,63,0.4); }
+.action-btn.success:hover { background: rgba(15,123,63,0.08); }
+
+/* Card de resposta (expansível) */
+.resp-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.15s;
+}
+.resp-card:hover { box-shadow: 0 4px 12px rgba(30,60,110,0.08); }
+.resp-card-header {
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: 1fr 140px 130px 140px 30px;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
+  font-size: 13px;
+}
+.resp-card-header:hover { background: var(--surface2); }
+.resp-card-header .arrow { transition: transform 0.2s; color: var(--text3); }
+.resp-card.open .resp-card-header .arrow { transform: rotate(90deg); }
+.resp-card-body {
+  display: none;
+  padding: 0 18px 18px;
+  border-top: 1px solid var(--border);
+}
+.resp-card.open .resp-card-body { display: block; }
+.resp-bloco {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border-left: 3px solid var(--accent);
+  border-radius: 6px;
+}
+.resp-bloco h4 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text2); margin-bottom: 6px; font-weight: 700; }
+.resp-bloco p { font-size: 13px; color: var(--text); white-space: pre-wrap; line-height: 1.5; }
+
+/* Empty state */
+.empty-state {
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text3);
+}
+.empty-state .ico { font-size: 48px; margin-bottom: 12px; }
+.empty-state .ttl { font-size: 16px; font-weight: 700; color: var(--text2); margin-bottom: 4px; }
+
+/* Loading */
+.loading-overlay { position: fixed; inset: 0; background: rgba(241, 245, 251, 0.85); display: none; align-items: center; justify-content: center; z-index: 999; }
+.loading-overlay.show { display: flex; }
+.spinner { width: 44px; height: 44px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Notification */
+.notification {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--surface); color: var(--text);
+  padding: 14px 20px; border-radius: 10px;
+  border-left: 4px solid var(--accent);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+  z-index: 2000;
+  transform: translateX(420px); transition: transform 0.3s;
+  font-size: 13px; font-weight: 500;
+}
+.notification.show { transform: translateX(0); }
+.notification.error { border-left-color: var(--red); }
+.notification.success { border-left-color: var(--green); }
+
+/* Banner */
+#readonly-banner {
+  display: none;
+  background: rgba(255, 230, 0, 0.15);
+  border-bottom: 1px solid rgba(255, 230, 0, 0.4);
+  color: #5a4a00; font-size: 12px;
+  font-family: 'DM Mono', monospace; font-weight: 500;
+  padding: 8px 24px; text-align: center;
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon" title="SMG 15">
+      <svg viewBox="0 0 64 56" width="40" height="36" xmlns="http://www.w3.org/2000/svg" aria-label="SMG 15">
+        <ellipse cx="32" cy="28" rx="28" ry="24" fill="#FFE600"/>
+        <text x="32" y="24" text-anchor="middle" font-family="Arial Black, sans-serif" font-weight="900" font-size="14" fill="#2D3277">SMG</text>
+        <text x="32" y="42" text-anchor="middle" font-family="Arial Black, sans-serif" font-weight="900" font-size="14" fill="#2D3277">15</text>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">Gestão de Feedback</div>
+      <div class="brand-sub">SMG18 · 1:1 Team Leader</div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="tab-btn" onclick="switchTab('comparativo')">⚖ Comparativo</button>
+    <button class="tab-btn" onclick="switchTab('respostas')">📝 Respostas 1:1</button>
+  </div>
+  <div class="topbar-right">
+    <div class="online-pill">
+      <div class="online-dot" id="online-dot"></div>
+      <span id="online-text">Conectando...</span>
+    </div>
+    <div id="auth-box">
+      <button class="topbar-btn" onclick="refreshColabsFromSheet().then(n => n>0 && notify(`✓ ${n} colabs atualizados do Sheets`))" title="Sincroniza a lista de colaboradores com o Google Sheets agora">🔄 Sincronizar Sheets</button>
+      <button id="btn-auth-pwd" class="topbar-btn" onclick="openPasswordLoginModal()" title="Login com email + senha (alternativa caso o magic link não chegue)" style="margin-right:4px;display:none">🔑 Login</button>
+      <button id="btn-auth-in" class="topbar-btn" onclick="signInEmailLink()" style="display:none">📧 Magic Link</button>
+      <div id="auth-user" class="auth-user" style="display:none">
+        <img id="auth-avatar" src="" alt="">
+        <span id="auth-name" class="nm"></span>
+        <button class="topbar-btn" onclick="signOutUser()" style="padding:4px 10px;font-size:11px">Sair</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="readonly-banner">👁 Modo somente-leitura — faça login com email @mercadolivre.com pra agendar 1:1</div>
+
+<div class="main">
+
+  <!-- DASHBOARD VIEW -->
+  <div class="view active" id="view-dashboard">
+    <div class="page-title">
+      <div>
+        <h1 id="dash-title">PAINEL 1:1 TEAM LEADER SMG18</h1>
+        <div class="sub" id="dash-subtitle">Carregando…</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <select id="dash-month-filter" onchange="refreshDashboard()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:13px;background:#fff;color:var(--text)">
+          <option value="">Mês atual</option>
+        </select>
+        <select id="dash-lider-filter" onchange="refreshDashboard()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:13px;background:#fff;color:var(--text)">
+          <option value="">Todos líderes</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- KPI cards modernos -->
+    <div class="kpi-cards">
+      <div class="kpi-card total">
+        <div class="kpi-icon">👥</div>
+        <div class="kpi-content">
+          <div class="kpi-label">Total HC</div>
+          <div class="kpi-value" id="kpi-total">—</div>
+          <div class="kpi-mini">
+            <span class="kpi-mini-tag meli">MELI <strong id="kpi-meli">—</strong></span>
+            <span class="kpi-mini-tag temp">TEMP <strong id="kpi-temp">—</strong></span>
+          </div>
+        </div>
+      </div>
+      <div class="kpi-card realizado">
+        <div class="kpi-icon">✅</div>
+        <div class="kpi-content">
+          <div class="kpi-label">1:1 Realizados</div>
+          <div class="kpi-value" id="kpi-total-real">—</div>
+          <div class="kpi-mini">
+            <span class="kpi-mini-tag meli">MELI <strong id="kpi-meli-real">0</strong></span>
+            <span class="kpi-mini-tag temp">TEMP <strong id="kpi-temp-real">0</strong></span>
+          </div>
+          <div class="kpi-progress"><div class="kpi-progress-fill" id="kpi-real-bar" style="width:0%"></div></div>
+          <div class="kpi-sub" id="kpi-real-sub">— do total no mês</div>
+        </div>
+      </div>
+      <div class="kpi-card agendado">
+        <div class="kpi-icon">📅</div>
+        <div class="kpi-content">
+          <div class="kpi-label">1:1 Agendados</div>
+          <div class="kpi-value" id="kpi-total-ag">—</div>
+          <div class="kpi-mini">
+            <span class="kpi-mini-tag meli">MELI <strong id="kpi-meli-ag">0</strong></span>
+            <span class="kpi-mini-tag temp">TEMP <strong id="kpi-temp-ag">0</strong></span>
+          </div>
+          <div class="kpi-sub" id="kpi-ag-sub">— aguardando</div>
+        </div>
+      </div>
+      <div class="kpi-card pendente">
+        <div class="kpi-icon">⏳</div>
+        <div class="kpi-content">
+          <div class="kpi-label">Pendentes</div>
+          <div class="kpi-value" id="kpi-pendentes">—</div>
+          <div class="kpi-mini">
+            <span class="kpi-mini-tag meli">MELI <strong id="kpi-meli-pend">0</strong></span>
+            <span class="kpi-mini-tag temp">TEMP <strong id="kpi-temp-pend">0</strong></span>
+          </div>
+          <div class="kpi-sub">Sem 1:1 no mês</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botão principal: NOVO 1:1 -->
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+      <button class="btn btn-primary big" onclick="openAgendarModal()">+ Agendar Novo 1:1</button>
+    </div>
+
+    <!-- Tabela de 1:1 (Próximos + Realizados + Cancelados) com filtros -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="card-toolbar">
+        <div class="card-title-block">
+          <span class="section-title-inline">📋 1:1 do período</span>
+          <span class="card-subtitle" id="ag-subtitle">—</span>
+        </div>
+        <div class="card-filters">
+          <select id="ag-filter-status" onchange="refresh1on1Table()" class="filter-input filter-sm">
+            <option value="">Todos status</option>
+            <option value="AGENDADO">Agendado</option>
+            <option value="REALIZADO">Realizado</option>
+            <option value="CANCELADO">Cancelado</option>
+          </select>
+          <input type="text" id="ag-filter-search" placeholder="🔍 Nome..." oninput="refresh1on1Table()" class="filter-input filter-sm" style="min-width:140px">
+        </div>
+      </div>
+      <div id="ag-list-host"></div>
+    </div>
+
+    <!-- Classificação de desempenho -->
+    <div class="perf-wrap">
+      <div class="perf-header"><h2>CLASSIFICAÇÃO DE DESEMPENHO</h2></div>
+      <div class="perf-body">
+        <div class="perf-bars" id="perf-bars">
+          <div class="perf-bar-row"><div class="perf-bar-label">Alinhado</div><div class="perf-bar alinhado"><div class="fill" id="perf-alin">0</div></div></div>
+          <div class="perf-bar-row"><div class="perf-bar-label">Necessita alinhamento</div><div class="perf-bar necessita"><div class="fill" id="perf-nec">0</div></div></div>
+          <div class="perf-bar-row"><div class="perf-bar-label">Potencial para promoção</div><div class="perf-bar promocao"><div class="fill" id="perf-pot">0</div></div></div>
+          <div class="perf-bar-row"><div class="perf-bar-label">Potencial para internalização</div><div class="perf-bar internalizacao"><div class="fill" id="perf-int">0</div></div></div>
+        </div>
+        <div class="perf-pie"><canvas id="perf-pie-canvas" width="220" height="220"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Pendências de agendamento -->
+    <div class="page-title" style="margin-bottom:14px">
+      <h1 style="font-size:18px">📋 PENDÊNCIAS DE AGENDAMENTO</h1>
+      <select id="pend-lider-filter" onchange="renderPendencias()" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);font-family:inherit;font-size:13px;background:#fff;color:var(--text)">
+        <option value="">Todos os líderes</option>
+      </select>
+    </div>
+    <div class="pendencias-grid">
+      <div class="pend-card">
+        <div class="pend-card-header">MELI <span class="count" id="pend-meli-count">0</span></div>
+        <div id="pend-meli-list"></div>
+      </div>
+      <div class="pend-card">
+        <div class="pend-card-header">TEMPORÁRIO <span class="count" id="pend-temp-count">0</span></div>
+        <div id="pend-temp-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARATIVO VIEW -->
+  <div class="view" id="view-comparativo">
+    <div class="page-title">
+      <div>
+        <h1>⚖ Comparativo entre Líderes</h1>
+        <div class="sub" id="comp-subtitle">—</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <select id="comp-mes-filter" onchange="refreshComparativo()" class="filter-input"></select>
+      </div>
+    </div>
+
+    <!-- KPI line — total realizados e por classificação -->
+    <div class="comp-kpi-row" id="comp-kpi-row"></div>
+
+    <!-- Card destaque: Quem agendou e não realizou na data -->
+    <div class="comp-mini-card comp-card-warn" style="margin-bottom:16px">
+      <div class="comp-card-title">
+        <span class="status-pill ATRASADO">⏰ Agendou e NÃO realizou na data</span>
+        <span class="comp-card-total" id="comp-total-late" style="color:#c2261d">0</span>
+      </div>
+      <div class="comp-bars" id="comp-bars-late"></div>
+    </div>
+
+    <!-- 4 mini-charts: 1 por classificação, líderes em barras -->
+    <div class="comp-grid">
+      <div class="comp-mini-card">
+        <div class="comp-card-title">
+          <span class="class-pill alinhado">✅ Alinhados</span>
+          <span class="comp-card-total" id="comp-total-alin">0</span>
+        </div>
+        <div class="comp-bars" id="comp-bars-alin"></div>
+      </div>
+      <div class="comp-mini-card">
+        <div class="comp-card-title">
+          <span class="class-pill necessita">⚠ Necessita alinhamento</span>
+          <span class="comp-card-total" id="comp-total-nec">0</span>
+        </div>
+        <div class="comp-bars" id="comp-bars-nec"></div>
+      </div>
+      <div class="comp-mini-card">
+        <div class="comp-card-title">
+          <span class="class-pill promocao">⭐ Potencial para promoção</span>
+          <span class="comp-card-total" id="comp-total-pot">0</span>
+        </div>
+        <div class="comp-bars" id="comp-bars-pot"></div>
+      </div>
+      <div class="comp-mini-card">
+        <div class="comp-card-title">
+          <span class="class-pill internalizacao">🎯 Potencial para internalização</span>
+          <span class="comp-card-total" id="comp-total-int">0</span>
+        </div>
+        <div class="comp-bars" id="comp-bars-int"></div>
+      </div>
+    </div>
+
+    <!-- Tabela cruzada consolidada -->
+    <div class="card" style="padding:0;overflow:hidden;margin-top:20px">
+      <div class="card-toolbar">
+        <div class="card-title-block">
+          <span class="section-title-inline">Visão consolidada</span>
+          <span class="card-subtitle">Total de 1:1 realizados por líder, por classificação</span>
+        </div>
+      </div>
+      <div id="comp-table-host"></div>
+    </div>
+  </div>
+
+  <!-- RESPOSTAS VIEW -->
+  <div class="view" id="view-respostas">
+    <div class="page-title">
+      <div>
+        <h1>📝 Respostas dos 1:1 Realizados</h1>
+        <div class="sub" id="resp-subtitle">Total: —</div>
+        <span id="resp-viewer-badge" style="display:none;font-size:11px;background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:20px;font-weight:700;margin-top:4px"></span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <select id="resp-filter-lider" onchange="refreshRespostas()" class="filter-input">
+          <option value="">Todos líderes</option>
+        </select>
+        <select id="resp-filter-class" onchange="refreshRespostas()" class="filter-input">
+          <option value="">Todas classificações</option>
+          <option value="Alinhado">Alinhado</option>
+          <option value="Necessita alinhamento">Necessita alinhamento</option>
+          <option value="Potencial para promoção">Potencial para promoção</option>
+          <option value="Potencial para internalização">Potencial para internalização</option>
+        </select>
+        <select id="resp-filter-mes" onchange="refreshRespostas()" class="filter-input"></select>
+        <input type="text" id="resp-filter-search" placeholder="🔍 Nome..." oninput="refreshRespostas()" class="filter-input" style="min-width:160px">
+        <button class="btn" onclick="exportRespostasCSV()">⬇ Exportar CSV</button>
+      </div>
+    </div>
+    <div id="resp-list-host"></div>
+  </div>
+
+</div>
+
+<!-- MODAL: Login com Email + Senha -->
+<div class="modal-overlay" id="modal-password-login">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">🔑 Login com Senha</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Alternativa caso o magic link não chegue no seu email. Use seu email <strong>@mercadolivre.com</strong>.</div>
+    <div style="font-size:12px;color:#1e6ae0;background:#eaf2fc;border:1px solid #c7d8ec;padding:8px 10px;border-radius:6px;margin-bottom:12px;line-height:1.5">
+      <strong>Edilaene / Nathalia:</strong> usem a senha <code style="background:#fff;padding:1px 6px;border-radius:4px;font-weight:700">hexa@2026</code> — não precisam marcar "criar conta".<br>
+      <span style="color:#475569">Se já tentaram o magic link antes, chegará um <strong>email de reset</strong> primeiro pra definir essa senha (clica no link, define <code style="background:#fff;padding:1px 4px;border-radius:3px">hexa@2026</code> e volta aqui).</span>
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr">
+      <div class="form-group full">
+        <label>Email *</label>
+        <input type="email" id="pwd-email" placeholder="seu.email@mercadolivre.com" autocomplete="email">
+      </div>
+      <div class="form-group full">
+        <label>Senha *</label>
+        <input type="password" id="pwd-password" placeholder="Mínimo 6 caracteres" autocomplete="current-password">
+      </div>
+      <div class="form-group full" style="margin-top:-4px">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:500;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="pwd-is-new"> Primeira vez? Criar nova conta
+        </label>
+      </div>
+      <div id="pwd-hint" style="font-size:12px;color:var(--text3);padding:8px 10px;background:var(--surface2);border-radius:6px"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closePasswordLoginModal()">Cancelar</button>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="resetPassword()" title="Esqueceu a senha? Envia link de reset por email">🔄 Esqueci a senha</button>
+      <button class="btn btn-primary" onclick="submitPasswordLogin()" id="pwd-submit-btn">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Realizar 1:1 (com formulário inline) -->
+<div class="modal-overlay" id="modal-realizar">
+  <div class="modal" style="width:min(92vw,720px)">
+    <div class="modal-title">✓ Realizar 1:1 — Formulário de Acompanhamento</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Preencha as respostas do 1:1. Tudo fica registrado em "Respostas".</div>
+
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Nome do colaborador</label>
+        <input type="text" id="rz-colab" readonly>
+      </div>
+      <div class="form-group">
+        <label>Tipo de contrato</label>
+        <input type="text" id="rz-tipo" placeholder="Auto-preenchido (editável)">
+      </div>
+      <div class="form-group">
+        <label>Data do 1:1</label>
+        <input type="date" id="rz-date">
+      </div>
+      <div class="form-group full">
+        <label>Anote os principais pontos trazidos pelo colaborador *</label>
+        <textarea id="rz-pontos-colab" rows="4" placeholder="O que o colaborador trouxe na conversa..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Anote os pontos que você orientou o colaborador *</label>
+        <textarea id="rz-pontos-orient" rows="4" placeholder="Orientações, feedbacks, próximos passos..."></textarea>
+      </div>
+      <div class="form-group full">
+        <label>Como você classifica esse colaborador no desempenho? *</label>
+        <div id="rz-classificacao" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" onclick="closeRealizarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveRealizar()">✓ Concluir 1:1</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Agendar 1:1 -->
+<div class="modal-overlay" id="modal-agendar">
+  <div class="modal" style="width:560px">
+    <div class="modal-title">📅 Agendar 1:1</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Colaborador *</label>
+        <input type="text" id="ag-colab" list="ag-colab-list" placeholder="Comece a digitar..." autocomplete="off" oninput="onAgColabChange()">
+        <datalist id="ag-colab-list"></datalist>
+        <div id="ag-colab-hint" style="font-size:11px;color:var(--text3);margin-top:4px"></div>
+      </div>
+      <div class="form-group"><label>Empresa</label><input type="text" id="ag-empresa" readonly></div>
+      <div class="form-group"><label>Líder</label><input type="text" id="ag-lider" readonly></div>
+      <div class="form-group"><label>Data *</label><input type="date" id="ag-date"></div>
+      <div class="form-group"><label>Hora</label><input type="time" id="ag-time"></div>
+      <div class="form-group full"><label>Observações</label><textarea id="ag-obs" rows="3" placeholder="Anotações iniciais..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" onclick="closeAgendarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveAgendamento()">💾 Salvar agendamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Senha pra acessar Respostas -->
+<div class="modal-overlay" id="modal-resp-lock">
+  <div class="modal" style="width:420px">
+    <div class="modal-title">🔒 Acesso restrito</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.55">
+      As respostas dos 1:1 contêm informações sensíveis. Digite sua senha de acesso pra continuar.
+    </div>
+    <div class="form-grid" style="grid-template-columns:1fr">
+      <div class="form-group full">
+        <label>Senha *</label>
+        <input type="password" id="resp-lock-pwd" placeholder="Digite a senha..." onkeypress="if(event.key==='Enter') submitRespLock()" autocomplete="current-password">
+        <div id="resp-lock-hint" style="font-size:11px;color:var(--text3);margin-top:6px">Após entrar, o acesso fica salvo por 7 dias neste navegador.</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <div style="flex:1"></div>
+      <button class="btn btn-ghost" onclick="closeRespLockModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitRespLock()" id="resp-lock-btn">🔓 Entrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="notification" id="notification"></div>
+<div class="loading-overlay show" id="loading-overlay"><div class="spinner"></div></div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// FIREBASE — mesmo banco do controle-presenca (registrosmg15) — path smg18/
+// ════════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyCR-O8PWfKdTANDPnu59DeACPmAN-TrJsI",
+  authDomain: "registrosmg15.firebaseapp.com",
+  databaseURL: "https://registrosmg15-default-rtdb.firebaseio.com",
+  projectId: "registrosmg15",
+  storageBucket: "registrosmg15.firebasestorage.app",
+  messagingSenderId: "353674201769",
+  appId: "1:353674201769:web:14f0e14647e85875b4b7b8"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const ALLOWED_DOMAIN = 'mercadolivre.com';
+
+// ── Fonte de verdade dos colaboradores: Google Sheets (não mais Firebase) ──
+// Sheet precisa estar acessível como "qualquer pessoa com o link pode visualizar"
+const SHEET_ID  = '1hRVnx-G2Kw_ZoHYzCGyju914PrB2fGIKZgSHIjm8GxE';
+const SHEET_GID = '1927400370';
+// Endpoint gviz (CORS aberto), retorna CSV direto sem redirect pra outro domínio
+const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SHEET_GID}`;
+
+// Parser CSV simples (respeita aspas)
+function _parseCSV(text) {
+  const rows = [];
+  let cur = [], field = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i], n = text[i+1];
+    if (inQ) {
+      if (c === '"' && n === '"') { field += '"'; i++; }
+      else if (c === '"') inQ = false;
+      else field += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ',') { cur.push(field); field = ''; }
+      else if (c === '\n') { cur.push(field); rows.push(cur); cur = []; field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else field += c;
+    }
+  }
+  if (field !== '' || cur.length) { cur.push(field); rows.push(cur); }
+  return rows;
+}
+
+async function fetchColabsFromSheet() {
+  let res;
+  try {
+    res = await fetch(SHEET_CSV_URL + '&_=' + Date.now(), { cache: 'no-store' });
+  } catch (e) {
+    // "Failed to fetch" — normalmente CORS ou rede
+    throw new Error('Falha de rede/CORS ao acessar Sheets. Verifica se o compartilhamento tá como "Qualquer pessoa com o link" e não está sob paywall.');
+  }
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(`Acesso negado (HTTP ${res.status}). Sheet precisa estar como "Qualquer pessoa com o link" - Leitor.`);
+    }
+    throw new Error(`Sheets HTTP ${res.status}`);
+  }
+  const text = await res.text();
+  const rows = _parseCSV(text);
+  if (!rows.length) throw new Error('Sheets retornou vazio — verifique o GID');
+  const headers = rows[0].map(h => h.trim());
+  return rows.slice(1)
+    .filter(r => r.some(c => (c||'').trim()))
+    .map(r => {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = ((r[i] ?? '')+'').trim(); });
+      // Normaliza "COLABORADORES" → "COLABORADOR" para compatibilidade
+      if (obj.COLABORADORES !== undefined && obj.COLABORADOR === undefined) {
+        obj.COLABORADOR = obj.COLABORADORES;
+      }
+      return obj;
+    });
+}
+
+// ── Estado ──
+let allColabs = [];        // lê do Google Sheets
+let oneOnOnes = {};        // lê de smg18/oneOnOne
+let currentUser = null;
+
+// ── Helpers ──
+function notify(msg, type='success') {
+  const el = document.getElementById('notification');
+  el.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+  el.className = `notification ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3500);
+}
+function today() { return new Date().toISOString().slice(0,10); }
+function formatDate(d) {
+  if (!d) return '';
+  const p = d.split('T')[0].split('-');
+  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
+}
+function isActive(r)   { return r.STATUS === undefined || (r.STATUS||'').trim().toUpperCase() === 'ATIVO'; }
+function isMeli(r)     { return (r.EMPRESA||'').trim().toUpperCase() === 'MELI'; }
+function isPartTime(r) { return (r.EMPRESA||'').trim().toUpperCase() === 'PART TIME'; }
+function isTemp(r)     { return !isMeli(r) && !isPartTime(r); }
+
+// ── Auth ──
+function signInEmailLink() {
+  const email = (prompt(`Digite seu email @${ALLOWED_DOMAIN}:`) || '').trim().toLowerCase();
+  if (!email) return;
+  if (!email.endsWith('@' + ALLOWED_DOMAIN)) {
+    if (!confirm(`O email ${email} não é @${ALLOWED_DOMAIN}. Vai entrar em modo somente-leitura. Continuar?`)) return;
+  }
+  const actionCodeSettings = { url: window.location.origin + window.location.pathname, handleCodeInApp: true };
+  firebase.auth().sendSignInLinkToEmail(email, actionCodeSettings)
+    .then(() => { localStorage.setItem('emailForSignIn_feedback', email); notify('Link de login enviado pra ' + email); })
+    .catch(err => notify('Falha no envio: ' + (err.message || err), 'error'));
+}
+function completeEmailLinkSignIn() {
+  if (!firebase.auth().isSignInWithEmailLink(window.location.href)) return;
+  let email = localStorage.getItem('emailForSignIn_feedback');
+  if (!email) email = prompt('Confirme seu email pra completar o login:');
+  if (!email) return;
+  firebase.auth().signInWithEmailLink(email, window.location.href)
+    .then(() => { localStorage.removeItem('emailForSignIn_feedback'); history.replaceState(null, '', window.location.pathname); notify('Login concluído ✓'); })
+    .catch(err => notify('Falha ao completar login: ' + (err.message || err), 'error'));
+}
+function signOutUser() { firebase.auth().signOut().then(() => notify('Sessão encerrada')); }
+
+// ── Login com Email + Senha (alternativa ao magic link) ──
+function openPasswordLoginModal() {
+  document.getElementById('pwd-email').value = localStorage.getItem('lastEmail_feedback') || '';
+  document.getElementById('pwd-password').value = '';
+  document.getElementById('pwd-is-new').checked = false;
+  document.getElementById('pwd-hint').textContent = 'Já tem conta? Entre direto. Primeira vez? Marque "Criar nova conta".';
+  document.getElementById('pwd-submit-btn').textContent = 'Entrar';
+  document.getElementById('modal-password-login').classList.add('open');
+  // Reage ao checkbox de criar conta
+  document.getElementById('pwd-is-new').onchange = (e) => {
+    document.getElementById('pwd-submit-btn').textContent = e.target.checked ? 'Criar conta' : 'Entrar';
+    document.getElementById('pwd-hint').textContent = e.target.checked
+      ? 'Será criada uma conta nova com este email + senha. Senha deve ter ao menos 6 caracteres.'
+      : 'Entrando com email e senha existentes.';
+  };
+  setTimeout(() => document.getElementById('pwd-email').focus(), 50);
+}
+function closePasswordLoginModal() {
+  document.getElementById('modal-password-login').classList.remove('open');
+}
+// Lista de pré-cadastrados que entram com a senha fixa "hexa@2026"
+// (atalho enquanto o magic link/EmailJS estiver com limite)
+const PRESET_USERS = {
+  'edilaene.voliveira@mercadolivre.com': 'hexa@2026',
+  'nathalia.hsantos@mercadolivre.com':   'hexa@2026'
+};
+
+function submitPasswordLogin() {
+  const email = document.getElementById('pwd-email').value.trim().toLowerCase();
+  const pass  = document.getElementById('pwd-password').value;
+  const isNew = document.getElementById('pwd-is-new').checked;
+  if (!email || !pass) return notify('Preencha email e senha', 'error');
+  if (!email.endsWith('@' + ALLOWED_DOMAIN)) {
+    if (!confirm(`Email ${email} não é @${ALLOWED_DOMAIN}. Entrará em modo somente-leitura. Continuar?`)) return;
+  }
+  const btn = document.getElementById('pwd-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Processando...'; }
+
+  // Atalho: se é usuário pré-cadastrado E senha bate, tenta signIn; se conta não existe, cria com a mesma senha
+  const isPreset = PRESET_USERS[email] && PRESET_USERS[email] === pass;
+  const done = () => {
+    localStorage.setItem('lastEmail_feedback', email);
+    closePasswordLoginModal();
+    notify(`Logado como ${email}`);
+  };
+  const onErr = (err, msgOverride) => {
+    const code = err.code || '';
+    let msg = msgOverride || err.message || 'Erro desconhecido';
+    if (!msgOverride) {
+      if (code === 'auth/email-already-in-use') msg = 'Email já tem conta — desmarque "Criar nova conta" e use sua senha.';
+      else if (code === 'auth/wrong-password' || code === 'auth/invalid-credential' || code === 'auth/invalid-login-credentials') msg = 'Email ou senha incorretos.';
+      else if (code === 'auth/user-not-found') msg = 'Conta não encontrada — marque "Criar nova conta" pra registrar.';
+      else if (code === 'auth/weak-password') msg = 'Senha muito fraca (mínimo 6 caracteres).';
+      else if (code === 'auth/invalid-email') msg = 'Email inválido.';
+      else if (code === 'auth/operation-not-allowed') msg = 'Login com senha não está habilitado no Firebase. Avisar admin.';
+    }
+    notify(msg, 'error');
+  };
+  const finish = () => { if (btn) { btn.disabled = false; btn.textContent = isNew ? 'Criar conta' : 'Entrar'; } };
+
+  if (isPreset) {
+    // Estratégia: descobre PRIMEIRO se a conta já existe (e como)
+    // - sem nenhum método → cria com senha fixa
+    // - já com password → tenta signin direto
+    // - só emailLink → manda reset de senha (pra ela definir a senha do zero)
+    console.log('[preset-login] email:', email);
+    firebase.auth().fetchSignInMethodsForEmail(email)
+      .then(methods => {
+        console.log('[preset-login] métodos atuais:', methods);
+        if (!methods || methods.length === 0) {
+          // Conta não existe → cria com senha fixa
+          return firebase.auth().createUserWithEmailAndPassword(email, pass).then(done);
+        }
+        if (methods.includes('password')) {
+          // Já tem senha → tenta entrar; se errado, manda reset
+          return firebase.auth().signInWithEmailAndPassword(email, pass)
+            .then(done)
+            .catch(err => {
+              // senha cadastrada é diferente — manda reset pra ela trocar
+              return firebase.auth().sendPasswordResetEmail(email).then(() => {
+                onErr(err, `Senha desta conta é diferente de "hexa@2026". Enviei um link de reset pra ${email} — abra o link, defina "hexa@2026" como nova senha e tente entrar de novo.`);
+              }).catch(e3 => onErr(e3));
+            });
+        }
+        // Conta só tem emailLink — manda reset pra ela criar senha
+        return firebase.auth().sendPasswordResetEmail(email).then(() => {
+          onErr({ code: 'auth/no-password' }, `A conta ${email} ainda não tem senha (foi criada via magic link). Acabei de enviar um link de reset pra ${email} — abra o link, defina "hexa@2026" e tente entrar de novo aqui.`);
+        });
+      })
+      .catch(err => {
+        console.error('[preset-login] erro:', err);
+        onErr(err);
+      })
+      .finally(finish);
+    return;
+  }
+
+  const fn = isNew ? 'createUserWithEmailAndPassword' : 'signInWithEmailAndPassword';
+  firebase.auth()[fn](email, pass)
+    .then(done)
+    .catch(onErr)
+    .finally(finish);
+}
+function resetPassword() {
+  const email = document.getElementById('pwd-email').value.trim().toLowerCase();
+  if (!email) return notify('Digite seu email primeiro', 'error');
+  firebase.auth().sendPasswordResetEmail(email)
+    .then(() => notify(`Link de reset enviado pra ${email}. Verifica seu inbox.`))
+    .catch(err => notify('Falha: ' + (err.message || err), 'error'));
+}
+function canEdit() {
+  if (!currentUser) return false;
+  return (currentUser.email||'').toLowerCase().endsWith('@' + ALLOWED_DOMAIN);
+}
+
+// Garante que há um usuário autenticado antes de escrever no Firebase.
+// Se ninguém fez login, entra anonimamente (invisível pro usuário).
+// Se já está logado, renova o token para evitar permission_denied por expiração.
+async function ensureAuth() {
+  try {
+    const u = firebase.auth().currentUser;
+    if (!u) {
+      await firebase.auth().signInAnonymously();
+    } else {
+      await u.getIdToken(true);
+    }
+  } catch(e) {
+    throw new Error('Erro ao autenticar. Recarregue a página e tente novamente.');
+  }
+}
+
+// Exibe mensagem clara se o Firebase recusar a escrita
+function handleWriteError(e) {
+  const msg = e.message || String(e);
+  if (msg.includes('PERMISSION_DENIED') || msg.includes('permission_denied')) {
+    notify('Sem permissão no banco. Recarregue a página e tente novamente.', 'error');
+  } else {
+    notify('Falha: ' + msg, 'error');
+  }
+}
+
+// Admin: só esse email pode excluir respostas
+const ADMIN_EMAIL = 'acre.gomes@mercadolivre.com';
+function isAdmin() {
+  if (!currentUser) return false;
+  return (currentUser.email || '').toLowerCase() === ADMIN_EMAIL.toLowerCase();
+}
+function renderAuthUI() {
+  const btnIn = document.getElementById('btn-auth-in');
+  const btnPwd = document.getElementById('btn-auth-pwd');
+  const box   = document.getElementById('auth-user');
+  if (currentUser) {
+    btnIn.style.display = 'none';
+    if (btnPwd) btnPwd.style.display = 'none';
+    box.style.display = 'flex';
+    document.getElementById('auth-avatar').src = currentUser.photoURL || '';
+    document.getElementById('auth-avatar').style.display = currentUser.photoURL ? 'block' : 'none';
+    document.getElementById('auth-name').textContent = currentUser.displayName || currentUser.email;
+  } else {
+    btnIn.style.display = 'inline-block';
+    if (btnPwd) btnPwd.style.display = 'none'; // botão oculto — atalho via console se necessário
+    box.style.display = 'none';
+  }
+  document.getElementById('readonly-banner').style.display = canEdit() ? 'none' : 'flex';
+}
+
+// ── Senhas por líder pra acessar Respostas (persistente 7 dias em localStorage) ──
+// ADMIN vê todas; cada líder vê só os colaboradores dele.
+const LIDER_PASSWORDS = {
+  'ADMIN':      'smg18@2026',
+  'JENNY':      'Jenny@4715',
+  'JOAO PAULO': 'JoaoPaulo@3862'
+};
+const RESP_LOCK_KEY  = 'resp_unlock_until';
+const RESP_LIDER_KEY = 'resp_lider_atual';
+const RESP_LOCK_TTL  = 7 * 24 * 60 * 60 * 1000;
+function _isRespUnlocked() {
+  try {
+    const until = parseInt(localStorage.getItem(RESP_LOCK_KEY) || '0', 10);
+    return until > Date.now();
+  } catch(e) { return false; }
+}
+function _getRespLider() {
+  try { return localStorage.getItem(RESP_LIDER_KEY) || 'ADMIN'; } catch(e) { return 'ADMIN'; }
+}
+function _unlockResp(lider) {
+  try {
+    localStorage.setItem(RESP_LOCK_KEY, String(Date.now() + RESP_LOCK_TTL));
+    localStorage.setItem(RESP_LIDER_KEY, lider);
+  } catch(e) {}
+}
+function _lockResp() {
+  try { localStorage.removeItem(RESP_LOCK_KEY); localStorage.removeItem(RESP_LIDER_KEY); } catch(e){}
+}
+function openRespLockModal(onSuccess) {
+  const modal = document.getElementById('modal-resp-lock');
+  const pwd   = document.getElementById('resp-lock-pwd');
+  const hint  = document.getElementById('resp-lock-hint');
+  pwd.value = '';
+  hint.textContent = 'Após entrar, o acesso fica salvo por 7 dias neste navegador.';
+  hint.style.color = 'var(--text3)';
+  modal.classList.add('open');
+  setTimeout(() => pwd.focus(), 80);
+  window._respLockCb = typeof onSuccess === 'function' ? onSuccess : null;
+}
+function closeRespLockModal() {
+  document.getElementById('modal-resp-lock').classList.remove('open');
+  window._respLockCb = null;
+}
+function submitRespLock() {
+  const pwd  = document.getElementById('resp-lock-pwd').value.trim();
+  const hint = document.getElementById('resp-lock-hint');
+  const entry = Object.entries(LIDER_PASSWORDS).find(([, p]) => p === pwd);
+  if (entry) {
+    const lider = entry[0];
+    _unlockResp(lider);
+    const cb = window._respLockCb;
+    closeRespLockModal();
+    notify(lider === 'ADMIN' ? '🔓 Acesso total liberado por 7 dias' : `🔓 Acesso de ${lider} liberado por 7 dias`);
+    if (cb) cb();
+  } else {
+    hint.textContent = '❌ Senha incorreta. Tenta novamente.';
+    hint.style.color = '#f87171';
+    document.getElementById('resp-lock-pwd').value = '';
+    document.getElementById('resp-lock-pwd').focus();
+  }
+}
+
+// ── Tab switching ──
+function switchTab(name) {
+  // Aba "respostas" exige senha (fica destravada 7 dias após acertar)
+  if (name === 'respostas' && !_isRespUnlocked()) {
+    openRespLockModal(() => switchTab('respostas'));
+    return;
+  }
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  const idx = ['dashboard','comparativo','respostas'].indexOf(name);
+  document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+  if (name === 'dashboard')   refreshDashboard();
+  if (name === 'comparativo') refreshComparativo();
+  if (name === 'respostas')   refreshRespostas();
+}
+
+// Bloqueia manualmente (útil pra dar logout do modo protegido — chame no console: lockResp())
+window.lockResp = () => { _lockResp(); notify('🔒 Acesso às respostas bloqueado. Vai pedir senha da próxima vez.'); };
+
+// ── Init filters: mês corrente e líderes ──
+function initFilters() {
+  // Meses: Janeiro a Dezembro do ano corrente
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const now = new Date();
+  const year = now.getFullYear();
+  const curMonth = now.getMonth();
+  const sel = document.getElementById('dash-month-filter');
+  sel.innerHTML = '';
+  for (let m = 0; m < 12; m++) {
+    const v = `${year}-${String(m+1).padStart(2,'0')}`;
+    const lbl = `${meses[m]} ${year}`;
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = lbl;
+    if (m === curMonth) opt.selected = true;
+    sel.appendChild(opt);
+  }
+  // Líderes únicos
+  const lideres = [...new Set(allColabs.map(r => (r['LÍDER']||'').trim()).filter(v => v))].sort();
+  ['dash-lider-filter','pend-lider-filter'].forEach(id => {
+    const s = document.getElementById(id);
+    s.innerHTML = '<option value="">Todos os líderes</option>' + lideres.map(l => `<option>${l}</option>`).join('');
+  });
+}
+
+// ── Dashboard render ──
+function refreshDashboard() {
+  // Garante filtros populados
+  _populateLiderFilter('dash-lider-filter');
+
+  // Se líder não-admin autenticado, força filtro para o próprio líder e oculta selects
+  const _liderAuth = (_isRespUnlocked() && _getRespLider() !== 'ADMIN') ? _getRespLider() : null;
+  ['dash-lider-filter', 'pend-lider-filter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (_liderAuth) {
+      el.value = _liderAuth;
+      el.style.display = 'none';
+    } else {
+      el.style.display = '';
+    }
+  });
+
+  const mes  = document.getElementById('dash-month-filter').value || today().slice(0,7);
+  const lider = _liderAuth || document.getElementById('dash-lider-filter').value;
+  const meses = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+  const [yr, mo] = mes.split('-').map(Number);
+  document.getElementById('dash-title').textContent = `PAINEL 1:1 TEAM LEADER SMG18 · ${meses[mo-1]}`;
+  document.getElementById('dash-subtitle').textContent = `${mes} · ${lider || 'todos os líderes'}`;
+
+  // Filtra colabs ATIVOS por líder
+  const colabs = allColabs.filter(r => isActive(r) && (!lider || (r['LÍDER']||'').trim() === lider));
+  const meliCt = colabs.filter(isMeli).length;
+  const tempCt = colabs.length - meliCt;
+  const totalHc = colabs.length;
+
+  // Conta 1:1 do mês com breakdown por time
+  const monthPrefix = mes + '-';
+  let meliReal=0, meliAg=0, tempReal=0, tempAg=0;
+  const meliComAg = new Set(), tempComAg = new Set();
+  Object.entries(oneOnOnes).forEach(([idx, items]) => {
+    const colab = allColabs[parseInt(idx)];
+    if (!colab || !isActive(colab)) return;
+    if (lider && (colab['LÍDER']||'').trim() !== lider) return;
+    const isM = isMeli(colab);
+    Object.values(items).forEach(o => {
+      if (!o.date || !o.date.startsWith(monthPrefix)) return;
+      if (o.status === 'CANCELADO') return;
+      (isM ? meliComAg : tempComAg).add(parseInt(idx));
+      if (o.status === 'REALIZADO') { if (isM) meliReal++; else tempReal++; }
+      else                          { if (isM) meliAg++;   else tempAg++;   }
+    });
+  });
+  const realizado = meliReal + tempReal;
+  const agendado  = meliAg + tempAg;
+  const meliPend  = Math.max(0, meliCt - meliComAg.size);
+  const tempPend  = Math.max(0, tempCt - tempComAg.size);
+  const pendentes = meliPend + tempPend;
+  const pctReal = totalHc > 0 ? Math.round(realizado / totalHc * 100) : 0;
+
+  document.getElementById('kpi-total').textContent = totalHc;
+  document.getElementById('kpi-meli').textContent  = meliCt;
+  document.getElementById('kpi-temp').textContent  = tempCt;
+  document.getElementById('kpi-total-real').textContent = realizado;
+  document.getElementById('kpi-meli-real').textContent = meliReal;
+  document.getElementById('kpi-temp-real').textContent = tempReal;
+  document.getElementById('kpi-total-ag').textContent   = agendado;
+  document.getElementById('kpi-meli-ag').textContent = meliAg;
+  document.getElementById('kpi-temp-ag').textContent = tempAg;
+  document.getElementById('kpi-pendentes').textContent  = pendentes;
+  document.getElementById('kpi-meli-pend').textContent = meliPend;
+  document.getElementById('kpi-temp-pend').textContent = tempPend;
+  document.getElementById('kpi-real-sub').textContent = `${pctReal}% do total no mês`;
+  document.getElementById('kpi-ag-sub').textContent   = agendado === 0 ? 'aguardando' : (agendado === 1 ? '1 1:1 aguardando' : `${agendado} 1:1 aguardando`);
+  document.getElementById('kpi-real-bar').style.width = pctReal + '%';
+
+  refresh1on1Table();
+  renderPendencias();
+  renderPerformance();
+}
+
+
+function renderPendencias() {
+  const lider = document.getElementById('pend-lider-filter').value || document.getElementById('dash-lider-filter').value;
+  const mes = document.getElementById('dash-month-filter').value || today().slice(0,7);
+
+  function hasAg(idx) {
+    const items = oneOnOnes[idx] || {};
+    return Object.values(items).some(o => o.date && o.date.startsWith(mes));
+  }
+
+  const meli = [], temp = [];
+  allColabs.forEach((r, idx) => {
+    if (!isActive(r)) return;
+    if (lider && (r['LÍDER']||'').trim() !== lider) return;
+    if (hasAg(idx)) return;
+    (isMeli(r) ? meli : temp).push({ r, idx });
+  });
+  meli.sort((a,b) => (a.r.COLABORADOR||'').localeCompare(b.r.COLABORADOR||''));
+  temp.sort((a,b) => (a.r.COLABORADOR||'').localeCompare(b.r.COLABORADOR||''));
+
+  function render(elId, arr) {
+    document.getElementById(elId+'-count').textContent = arr.length;
+    const host = document.getElementById(elId+'-list');
+    if (!arr.length) { host.innerHTML = '<div class="pend-empty">✓ Todos com 1:1 agendado neste mês</div>'; return; }
+    host.innerHTML = `<div class="pend-scroll"><table class="pend-table"><thead><tr><th>Nome</th><th>Empresa</th><th>Líder</th></tr></thead><tbody>${
+      arr.map(({ r, idx }) => `<tr>
+        <td style="white-space:nowrap">
+          <button onclick="agendarRapido(${idx})" title="Agendar 1:1" style="background:none;border:none;cursor:pointer;font-size:15px;padding:0 6px 0 0;line-height:1;vertical-align:middle;opacity:0.7" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0.7">⏱️</button>${r.COLABORADOR||''}
+        </td>
+        <td>${r.EMPRESA||''}</td>
+        <td>${r['LÍDER']||'—'}</td>
+      </tr>`).join('')
+    }</tbody></table></div>`;
+  }
+  render('pend-meli', meli);
+  render('pend-temp', temp);
+}
+
+// Atalho da pendência: abre o modal de agendar com o colaborador já preenchido
+function agendarRapido(idx) {
+  openAgendarModal();
+  document.getElementById('ag-colab').value = allColabs[idx].COLABORADOR || '';
+  onAgColabChange();
+}
+
+function renderPerformance() {
+  const mes = document.getElementById('dash-month-filter').value || today().slice(0,7);
+  const lider = document.getElementById('dash-lider-filter').value;
+  let alin=0, nec=0, pot=0, intr=0;
+
+  function normClass(s) {
+    return (s||'').toString().trim().toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');   // remove acentos
+  }
+  Object.entries(oneOnOnes).forEach(([idx, items]) => {
+    const colab = allColabs[idx];
+    if (!colab || !isActive(colab)) return;
+    if (lider && (colab['LÍDER']||'').trim() !== lider) return;
+    Object.values(items).forEach(o => {
+      // Filtra por mês — usa form.date (data do 1:1) ou date (do agendamento)
+      const d = (o.form && o.form.date) || o.date || '';
+      if (!d.startsWith(mes)) return;
+      if (o.status !== 'REALIZADO') return;
+      // A classificação fica em o.form.classificacao (e não o.classificacao)
+      const c = normClass(o.form && o.form.classificacao);
+      if (c === 'alinhado') alin++;
+      else if (c === 'necessita alinhamento' || c === 'necessita') nec++;
+      else if (c === 'potencial para promocao' || c === 'potencial') pot++;
+      else if (c === 'potencial para internalizacao' || c === 'internalizacao') intr++;
+    });
+  });
+
+  const max = Math.max(alin, nec, pot, intr, 1);
+  function setBar(id, val) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = val;
+    const fill = (val / max) * 100;
+    const bar = el.parentElement;
+    // Mantém a cor da classe da .perf-bar — só anima a largura via fill-bar pseudo
+    bar.style.setProperty('--fill', fill + '%');
+  }
+  setBar('perf-alin', alin);
+  setBar('perf-nec',  nec);
+  setBar('perf-pot',  pot);
+  setBar('perf-int',  intr);
+
+  // Pie com 4 fatias
+  drawPie([
+    { label: 'Alinhado',       value: alin, color: '#16a34a' },
+    { label: 'Necessita',      value: nec,  color: '#f59e0b' },
+    { label: 'Promoção',       value: pot,  color: '#7c3aed' },
+    { label: 'Internalização', value: intr, color: '#0891b2' }
+  ]);
+}
+
+function drawPie(slices) {
+  const c = document.getElementById('perf-pie-canvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const total = slices.reduce((s,x)=>s+x.value,0);
+  if (total === 0) {
+    ctx.fillStyle = '#e5e7eb';
+    ctx.beginPath(); ctx.arc(110, 110, 90, 0, 2*Math.PI); ctx.fill();
+    ctx.fillStyle = '#888'; ctx.font = '14px Inter, sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText('Sem dados', 110, 115);
+    return;
+  }
+  let start = -Math.PI/2;
+  slices.forEach(s => {
+    const angle = (s.value/total) * 2 * Math.PI;
+    ctx.fillStyle = s.color;
+    ctx.beginPath();
+    ctx.moveTo(110,110);
+    ctx.arc(110,110,90,start,start+angle);
+    ctx.closePath(); ctx.fill();
+    if (s.value > 0) {
+      const mid = start + angle/2;
+      const tx = 110 + Math.cos(mid)*50;
+      const ty = 110 + Math.sin(mid)*50;
+      ctx.fillStyle = '#2D3277'; ctx.font = 'bold 12px Inter, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(Math.round(s.value/total*100) + '%', tx, ty);
+    }
+    start += angle;
+  });
+}
+
+// ── Modal Agendar ──
+function openAgendarModal() {
+  if (!canEdit()) { notify('Faça login com email @' + ALLOWED_DOMAIN + ' pra agendar', 'error'); return; }
+  document.getElementById('modal-agendar').classList.add('open');
+  const dl = document.getElementById('ag-colab-list');
+  dl.innerHTML = allColabs.filter(isActive).map(r => `<option value="${(r.COLABORADOR||'').replace(/"/g,'&quot;')}">`).join('');
+  ['ag-colab','ag-empresa','ag-lider','ag-obs'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('ag-date').value = today();
+  document.getElementById('ag-time').value = '';
+  document.getElementById('ag-colab-hint').textContent = '';
+  setTimeout(() => document.getElementById('ag-colab').focus(), 50);
+}
+function closeAgendarModal() { document.getElementById('modal-agendar').classList.remove('open'); }
+function findColabByName(nome) {
+  const n = (nome||'').trim().toUpperCase();
+  if (!n) return -1;
+  return allColabs.findIndex(r => (r.COLABORADOR||'').trim().toUpperCase() === n);
+}
+function onAgColabChange() {
+  const nome = document.getElementById('ag-colab').value;
+  const hint = document.getElementById('ag-colab-hint');
+  const idx = findColabByName(nome);
+  if (idx === -1) {
+    document.getElementById('ag-empresa').value = '';
+    document.getElementById('ag-lider').value = '';
+    if (nome.trim()) { hint.textContent = 'Colaborador não encontrado'; hint.style.color = '#c2261d'; }
+    else { hint.textContent = ''; }
+    return;
+  }
+  const r = allColabs[idx];
+  document.getElementById('ag-empresa').value = r.EMPRESA || '';
+  document.getElementById('ag-lider').value = r['LÍDER'] || '';
+  hint.textContent = '✓ Encontrado';
+  hint.style.color = '#0f7b3f';
+}
+function saveAgendamento() {
+  if (!canEdit()) { notify('Sem permissão', 'error'); return; }
+  const nome = document.getElementById('ag-colab').value.trim();
+  const date = document.getElementById('ag-date').value;
+  const time = document.getElementById('ag-time').value;
+  const obs  = document.getElementById('ag-obs').value.trim();
+  const idx = findColabByName(nome);
+  if (idx === -1) { notify('Selecione um colaborador da lista', 'error'); return; }
+  if (!date) { notify('Informe a data', 'error'); return; }
+  const entry = {
+    colabIdx: idx,
+    date, time: time || null, obs: obs || null,
+    status: 'AGENDADO',
+    by: currentUser ? (currentUser.displayName || currentUser.email) : 'DESCONHECIDO',
+    byEmail: currentUser ? currentUser.email : null,
+    at: Date.now()
+  };
+  db.ref(`smg18/oneOnOne/${idx}`).push(entry)
+    .then(() => { notify(`1:1 agendado pra ${allColabs[idx].COLABORADOR} em ${formatDate(date)}`); closeAgendarModal(); })
+    .catch(err => notify('Falha ao salvar: ' + (err.message || err), 'error'));
+}
+
+// ── Helpers compartilhados pra agendamentos/respostas ──
+const CLASSIFICACOES = [
+  { key: 'Alinhado',                       cls: 'alinhado',       ico: '✅' },
+  { key: 'Necessita alinhamento',          cls: 'necessita',      ico: '⚠' },
+  { key: 'Potencial para promoção',        cls: 'promocao',       ico: '⭐' },
+  { key: 'Potencial para internalização',  cls: 'internalizacao', ico: '🎯' }
+];
+function classPillHtml(value) {
+  const c = CLASSIFICACOES.find(x => x.key === value);
+  if (!c) return `<span style="color:var(--text3);font-size:12px">—</span>`;
+  return `<span class="class-pill ${c.cls}">${c.ico} ${c.key}</span>`;
+}
+function flatAgendamentos() {
+  // Retorna lista plana de todos os agendamentos com referência ao colaborador
+  const out = [];
+  Object.entries(oneOnOnes).forEach(([idx, items]) => {
+    Object.entries(items).forEach(([id, o]) => {
+      const colab = allColabs[parseInt(idx)];
+      if (!colab) return;
+      out.push({ idx: parseInt(idx), id, colab, ...o });
+    });
+  });
+  return out;
+}
+function _populateMesFilter(selId) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const now = new Date();
+  const year = now.getFullYear();
+  const curMonth = now.getMonth();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos os meses</option>';
+  // Janeiro a Dezembro do ano corrente
+  for (let m = 0; m < 12; m++) {
+    const v = `${year}-${String(m+1).padStart(2,'0')}`;
+    const lbl = `${meses[m]} ${year}`;
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = lbl;
+    sel.appendChild(opt);
+  }
+  // Preserva seleção se já tinha; senão, mês atual
+  if (cur && [...sel.options].some(o => o.value === cur)) sel.value = cur;
+  else sel.value = `${year}-${String(curMonth+1).padStart(2,'0')}`;
+}
+function _populateLiderFilter(selId) {
+  const sel = document.getElementById(selId);
+  if (!sel) return;
+  const lideres = [...new Set(allColabs.map(r => (r['LÍDER']||'').trim()).filter(v => v))].sort();
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todos líderes</option>' + lideres.map(l => `<option>${l}</option>`).join('');
+  if (cur) sel.value = cur;
+}
+
+// ── Tabela 1:1 dentro do Dashboard ──
+function _empresaKey(emp) {
+  const e = (emp||'').toUpperCase();
+  if (e === 'MELI') return 'MELI';
+  if (e === 'PART TIME') return 'PT';
+  if (e.startsWith('GI')) return 'GI';
+  if (e.startsWith('RAND')) return 'RAND';
+  if (e.startsWith('ADEC')) return 'ADEC';
+  if (e.startsWith('CARP')) return 'CARP';
+  return 'OTHER';
+}
+function _firstName(nome) {
+  // Mostra "PRIMEIRO ÚLTIMO" (compacto) — primeiro e último nome
+  const parts = (nome || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length <= 1) return nome || '';
+  return parts[0] + ' ' + parts[parts.length - 1];
+}
+function refresh1on1Table() {
+  const status = document.getElementById('ag-filter-status').value;
+  const search = (document.getElementById('ag-filter-search').value || '').trim().toLowerCase();
+  // Pega mês e líder dos filtros do topo do Dashboard
+  const lider = document.getElementById('dash-lider-filter').value;
+  const mes   = document.getElementById('dash-month-filter').value || today().slice(0,7);
+
+  let list = flatAgendamentos();
+  if (status) list = list.filter(o => (o.status||'AGENDADO') === status);
+  if (lider)  list = list.filter(o => (o.colab['LÍDER']||'').trim() === lider);
+  if (mes)    list = list.filter(o => o.date && o.date.startsWith(mes));
+  if (search) list = list.filter(o => (o.colab.COLABORADOR||'').toLowerCase().includes(search));
+
+  // Ordena: agendados primeiro por data asc, depois realizados por data desc, cancelados no fim
+  list.sort((a,b) => {
+    const ord = { AGENDADO: 0, REALIZADO: 1, CANCELADO: 2 };
+    const oa = ord[a.status||'AGENDADO'] ?? 0;
+    const ob = ord[b.status||'AGENDADO'] ?? 0;
+    if (oa !== ob) return oa - ob;
+    return oa === 0 ? (a.date||'').localeCompare(b.date||'') : (b.date||'').localeCompare(a.date||'');
+  });
+
+  document.getElementById('ag-subtitle').textContent = `${list.length} registro(s) — ${mes}${lider?' · '+lider:''}`;
+
+  const host = document.getElementById('ag-list-host');
+  if (!list.length) {
+    host.innerHTML = '<div class="empty-state" style="margin:20px"><div class="ico">📅</div><div class="ttl">Nenhum 1:1 no período</div><div>Clique em "+ Agendar Novo 1:1" pra começar.</div></div>';
+    return;
+  }
+
+  const t = today();
+  host.innerHTML = `<div class="next-table-wrap"><table class="next-table">
+    <thead><tr>
+      <th style="width:32%">Colaborador</th>
+      <th style="width:90px">Empresa</th>
+      <th style="width:18%">Líder</th>
+      <th style="width:100px">Data</th>
+      <th style="width:100px">Status</th>
+      <th style="width:150px">Classificação</th>
+      <th style="text-align:right">Ações</th>
+    </tr></thead>
+    <tbody>${list.map(o => {
+      const st = o.status || 'AGENDADO';
+      let stPill = st, stLabel = st.charAt(0) + st.slice(1).toLowerCase();
+      let dataCls = '';
+      if (st === 'AGENDADO' && o.date) {
+        if (o.date < t)  { stPill = 'ATRASADO'; stLabel = 'Atrasado'; dataCls = 'atrasado'; }
+        else if (o.date === t) { dataCls = 'hoje'; }
+      } else if (st === 'REALIZADO') {
+        dataCls = 'realizado';
+      }
+      const empName = (o.colab.EMPRESA||'').trim();
+      const empKey = _empresaKey(empName);
+      const empBadge = `<span class="badge-empresa ${empKey}">${empName || '—'}</span>`;
+      const cls = o.form && o.form.classificacao ? classPillHtml(o.form.classificacao) : '<span style="color:var(--text3);font-size:11px">—</span>';
+      const full = o.colab.COLABORADOR || '—';
+      const compact = _firstName(full);
+      const actions = st === 'REALIZADO'
+        ? `<button class="icon-btn" title="Ver detalhes" onclick="openRealizarModal('${o.idx}','${o.id}',true)">👁</button>`
+        : st === 'CANCELADO'
+          ? `<button class="icon-btn" title="Reativar" onclick="reativarAg('${o.idx}','${o.id}')">↻</button>
+             <button class="icon-btn danger" title="Excluir" onclick="excluirAg('${o.idx}','${o.id}')">🗑</button>`
+          : `<button class="icon-btn realizar" title="Realizar 1:1 (abre formulário)" onclick="openRealizarModal('${o.idx}','${o.id}')">✓</button>
+             <button class="icon-btn" title="Editar agendamento" onclick="editarAg('${o.idx}','${o.id}')">✏</button>
+             <button class="icon-btn danger" title="Cancelar" onclick="cancelarAg('${o.idx}','${o.id}')">✗</button>`;
+      return `<tr>
+        <td class="col-nome" title="${full}">${compact}<small>${full !== compact ? full : ' '}</small></td>
+        <td>${empBadge}</td>
+        <td>${o.colab['LÍDER'] || '—'}</td>
+        <td><span class="data-cell ${dataCls}">${o.date ? formatDate(o.date) : '—'}</span></td>
+        <td><span class="status-pill ${stPill}">${stLabel}</span></td>
+        <td>${cls}</td>
+        <td class="actions-cell">${actions}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+// Ações na lista
+async function cancelarAg(idx, id) {
+  if (!confirm('Cancelar este agendamento?')) return;
+  try { await ensureAuth(); } catch(e) { return notify(e.message, 'error'); }
+  db.ref(`smg18/oneOnOne/${idx}/${id}/status`).set('CANCELADO')
+    .then(() => notify('Agendamento cancelado'))
+    .catch(handleWriteError);
+}
+async function reativarAg(idx, id) {
+  try { await ensureAuth(); } catch(e) { return notify(e.message, 'error'); }
+  db.ref(`smg18/oneOnOne/${idx}/${id}/status`).set('AGENDADO')
+    .then(() => notify('Agendamento reativado'))
+    .catch(handleWriteError);
+}
+async function excluirAg(idx, id) {
+  if (!canEdit()) return notify('Sem permissão', 'error');
+  if (!confirm('Excluir definitivamente este registro? Esta ação não pode ser desfeita.')) return;
+  try { await ensureFreshToken(); } catch(e) { return notify(e.message, 'error'); }
+  db.ref(`smg18/oneOnOne/${idx}/${id}`).remove()
+    .then(() => notify('Removido'))
+    .catch(handleWriteError);
+}
+function editarAg(idx, id) {
+  if (!canEdit()) return notify('Sem permissão', 'error');
+  const o = (oneOnOnes[idx]||{})[id];
+  if (!o) return;
+  // Reabre o modal de agendar com dados pré-preenchidos
+  openAgendarModal();
+  document.getElementById('ag-colab').value = allColabs[idx].COLABORADOR || '';
+  onAgColabChange();
+  document.getElementById('ag-date').value = o.date || today();
+  document.getElementById('ag-time').value = o.time || '';
+  document.getElementById('ag-obs').value  = o.obs || '';
+  _editingAgRef = { idx, id };
+}
+let _editingAgRef = null;
+
+// ── Modal REALIZAR (com forms inline) ──
+let _realizingRef = null;
+function openRealizarModal(idx, id, readonly) {
+  // Ver 1:1 já realizado (readonly) exige senha — mesma senha das Respostas, persistência 7 dias
+  if (readonly && !_isRespUnlocked()) {
+    openRespLockModal(() => openRealizarModal(idx, id, readonly));
+    return;
+  }
+  if (!readonly && !canEdit()) return notify('Sem permissão', 'error');
+  _realizingRef = { idx, id, readonly: !!readonly };
+  const o = (oneOnOnes[idx]||{})[id];
+  if (!o) return;
+  const colab = allColabs[idx];
+  document.getElementById('rz-colab').value = colab.COLABORADOR || '';
+  document.getElementById('rz-tipo').value  = (o.form && o.form.tipoContrato) || colab.EMPRESA || '';
+  document.getElementById('rz-date').value  = (o.form && o.form.date) || o.date || today();
+  document.getElementById('rz-pontos-colab').value  = (o.form && o.form.pontosColab) || '';
+  document.getElementById('rz-pontos-orient').value = (o.form && o.form.pontosOrient) || '';
+
+  // Render classificação radios
+  const classHost = document.getElementById('rz-classificacao');
+  const cur = (o.form && o.form.classificacao) || '';
+  classHost.innerHTML = CLASSIFICACOES.map(c => `
+    <label class="class-radio ${c.cls} ${cur===c.key?'selected ' + c.cls:''}" data-val="${c.key}" data-cls="${c.cls}">
+      ${c.ico} ${c.key}
+      <input type="radio" name="rz-class" value="${c.key}" ${cur===c.key?'checked':''}>
+    </label>
+  `).join('');
+  classHost.querySelectorAll('.class-radio').forEach(el => {
+    el.onclick = () => {
+      if (readonly) return;
+      classHost.querySelectorAll('.class-radio').forEach(x => { x.classList.remove('selected'); CLASSIFICACOES.forEach(c => x.classList.remove(c.cls)); x.classList.add(x.dataset.cls); });
+      el.classList.add('selected', el.dataset.cls);
+      el.querySelector('input').checked = true;
+    };
+  });
+
+  // Readonly se já realizado
+  ['rz-tipo','rz-date','rz-pontos-colab','rz-pontos-orient'].forEach(id => {
+    document.getElementById(id).readOnly = !!readonly;
+  });
+  document.querySelector('#modal-realizar .btn-primary').style.display = readonly ? 'none' : '';
+
+  document.getElementById('modal-realizar').classList.add('open');
+}
+function closeRealizarModal() {
+  document.getElementById('modal-realizar').classList.remove('open');
+  _realizingRef = null;
+}
+async function saveRealizar() {
+  if (!_realizingRef) return;
+  const { idx, id } = _realizingRef;
+  const pontosColab = document.getElementById('rz-pontos-colab').value.trim();
+  const pontosOrient = document.getElementById('rz-pontos-orient').value.trim();
+  const checked = document.querySelector('input[name="rz-class"]:checked');
+  if (!pontosColab || !pontosOrient) return notify('Preencha os pontos do colab e os pontos orientados', 'error');
+  if (!checked) return notify('Selecione a classificação', 'error');
+  try { await ensureAuth(); } catch(e) { return notify(e.message, 'error'); }
+  const u = firebase.auth().currentUser;
+  const liderNome = (allColabs[idx] && allColabs[idx]['LÍDER']) || '';
+  const form = {
+    tipoContrato: document.getElementById('rz-tipo').value.trim(),
+    date: document.getElementById('rz-date').value,
+    pontosColab,
+    pontosOrient,
+    classificacao: checked.value
+  };
+  const update = {
+    [`smg18/oneOnOne/${idx}/${id}/status`]: 'REALIZADO',
+    [`smg18/oneOnOne/${idx}/${id}/form`]: form,
+    [`smg18/oneOnOne/${idx}/${id}/realizedAt`]: Date.now(),
+    [`smg18/oneOnOne/${idx}/${id}/realizedBy`]: (u && !u.isAnonymous) ? (u.displayName || u.email) : liderNome || 'DESCONHECIDO',
+    [`smg18/oneOnOne/${idx}/${id}/realizedByEmail`]: (u && !u.isAnonymous) ? u.email : null
+  };
+  db.ref().update(update)
+    .then(() => { notify('1:1 concluído ✓'); closeRealizarModal(); })
+    .catch(handleWriteError);
+}
+
+// ── Aba RESPOSTAS ──
+function refreshRespostas() {
+  const liderAutenticado = _isRespUnlocked() ? _getRespLider() : 'ADMIN';
+  const isAdmin = liderAutenticado === 'ADMIN';
+
+  // Atualiza badge de quem está visualizando
+  const badge = document.getElementById('resp-viewer-badge');
+  if (badge) {
+    badge.textContent = isAdmin ? '' : `👁 Visualizando como: ${liderAutenticado}`;
+    badge.style.display = isAdmin ? 'none' : 'inline-block';
+  }
+
+  // Líderes não-admin não podem filtrar por outros líderes — oculta o select
+  const liderSelect = document.getElementById('resp-filter-lider');
+  if (liderSelect) {
+    liderSelect.style.display = isAdmin ? '' : 'none';
+  }
+
+  _populateLiderFilter('resp-filter-lider');
+  _populateMesFilter('resp-filter-mes');
+
+  // Líderes veem histórico completo por padrão (sem filtro de mês pré-selecionado)
+  if (!isAdmin) {
+    const mesSel = document.getElementById('resp-filter-mes');
+    if (mesSel && mesSel.dataset.liderInit !== liderAutenticado) {
+      mesSel.value = '';
+      mesSel.dataset.liderInit = liderAutenticado;
+    }
+  }
+
+  const lider   = isAdmin ? document.getElementById('resp-filter-lider').value : liderAutenticado;
+  const classif = document.getElementById('resp-filter-class').value;
+  const mes     = document.getElementById('resp-filter-mes').value;
+  const search  = (document.getElementById('resp-filter-search').value || '').trim().toLowerCase();
+
+  // Normaliza nome pra comparação: remove acentos, espaços extras e maiuscula
+  function _normL(s) { return (s||'').trim().toUpperCase().normalize('NFD').replace(/[̀-ͯ]/g,''); }
+
+  let list = flatAgendamentos().filter(o => o.status === 'REALIZADO' && o.form);
+  if (lider)   list = list.filter(o => _normL(o.colab['LÍDER']) === _normL(lider));
+  if (classif) list = list.filter(o => o.form.classificacao === classif);
+  if (mes)     list = list.filter(o => (o.form.date || o.date || '').startsWith(mes));
+  if (search)  list = list.filter(o => (o.colab.COLABORADOR||'').toLowerCase().includes(search));
+
+  list.sort((a,b) => ((b.form.date||b.date||'') ).localeCompare(a.form.date||a.date||''));
+
+  document.getElementById('resp-subtitle').textContent = `${list.length} respostas(s)`;
+
+  const host = document.getElementById('resp-list-host');
+  if (!list.length) {
+    host.innerHTML = '<div class="empty-state"><div class="ico">📝</div><div class="ttl">Nenhuma resposta ainda</div><div>Conclua um 1:1 na aba Agendamentos pra começar.</div></div>';
+    return;
+  }
+
+  host.innerHTML = list.map((o, i) => `
+    <div class="resp-card" id="resp-card-${i}">
+      <div class="resp-card-header" onclick="toggleRespCard(${i})">
+        <div>
+          <strong>${o.colab.COLABORADOR || '—'}</strong>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${o.colab.EMPRESA || ''} · ${o.colab['LÍDER'] || '—'}</div>
+        </div>
+        <div class="mono" style="color:var(--text2);font-size:12px">${formatDate(o.form.date || o.date)}</div>
+        <div>${classPillHtml(o.form.classificacao)}</div>
+        <div style="font-size:11px;color:var(--text3);text-align:right">por ${o.realizedBy || '—'}</div>
+        <div class="arrow">▶</div>
+      </div>
+      <div class="resp-card-body">
+        <div class="resp-bloco">
+          <h4>Tipo de contrato</h4>
+          <p>${(o.form.tipoContrato || '—').replace(/</g,'&lt;')}</p>
+        </div>
+        <div class="resp-bloco">
+          <h4>Principais pontos trazidos pelo colaborador</h4>
+          <p>${(o.form.pontosColab || '—').replace(/</g,'&lt;')}</p>
+        </div>
+        <div class="resp-bloco">
+          <h4>Pontos orientados pelo líder</h4>
+          <p>${(o.form.pontosOrient || '—').replace(/</g,'&lt;')}</p>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="action-btn primary" onclick="event.stopPropagation();openRealizarModal('${o.idx}','${o.id}',true)">👁 Abrir em modal</button>
+          ${canEdit() ? `<button class="action-btn" onclick="event.stopPropagation();reabrirParaEditar('${o.idx}','${o.id}')">✏ Reabrir e editar</button>` : ''}
+          ${isAdmin ? `<button class="action-btn danger" onclick="event.stopPropagation();excluirResposta('${o.idx}','${o.id}','${(o.colab.COLABORADOR||'').replace(/'/g,'\\\'').replace(/"/g,'&quot;')}')">🗑 Excluir resposta</button>` : ''}
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+function toggleRespCard(i) {
+  const el = document.getElementById('resp-card-' + i);
+  if (el) el.classList.toggle('open');
+}
+// ── Comparativo entre Líderes ──
+function refreshComparativo() {
+  _populateMesFilter('comp-mes-filter');
+  const mes = document.getElementById('comp-mes-filter').value || today().slice(0,7);
+
+  function normClass(s) {
+    return (s||'').toString().trim().toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '');
+  }
+  function classKey(s) {
+    const c = normClass(s);
+    if (c === 'alinhado') return 'alin';
+    if (c === 'necessita alinhamento' || c === 'necessita') return 'nec';
+    if (c === 'potencial para promocao' || c === 'potencial') return 'pot';
+    if (c === 'potencial para internalizacao' || c === 'internalizacao') return 'int';
+    return null;
+  }
+
+  // byLider: { LIDER: { alin, nec, pot, int, total, atrasados, agendados } }
+  const byLider = {};
+  const tHoje = today();
+  function ensure(lider) {
+    if (!byLider[lider]) byLider[lider] = { alin: 0, nec: 0, pot: 0, int: 0, total: 0, atrasados: 0, agendados: 0 };
+  }
+  Object.entries(oneOnOnes).forEach(([idx, items]) => {
+    const colab = allColabs[parseInt(idx)];
+    if (!colab || !isActive(colab)) return;
+    const lider = (colab['LÍDER'] || '—').trim() || '—';
+    Object.values(items).forEach(o => {
+      const d = (o.form && o.form.date) || o.date || '';
+      if (!d.startsWith(mes)) return;
+      ensure(lider);
+      // Conta REALIZADOS por classificação
+      if (o.status === 'REALIZADO' && o.form) {
+        const key = classKey(o.form.classificacao);
+        if (key) {
+          byLider[lider][key]++;
+          byLider[lider].total++;
+        }
+      }
+      // Conta ATRASADOS: agendados cuja data já passou e não realizaram
+      else if ((o.status === 'AGENDADO' || !o.status) && o.date && o.date < tHoje) {
+        byLider[lider].atrasados++;
+      }
+      // Conta AGENDADOS no mês total (independente de status — inclusivo)
+      if ((o.status === 'AGENDADO' || !o.status || o.status === 'REALIZADO') && o.date) {
+        byLider[lider].agendados++;
+      }
+    });
+  });
+
+  const lideres = Object.keys(byLider).sort((a,b) =>
+    (byLider[b].total + byLider[b].atrasados) - (byLider[a].total + byLider[a].atrasados) || a.localeCompare(b));
+
+  // Totais gerais
+  const totals = { alin: 0, nec: 0, pot: 0, int: 0, total: 0, atrasados: 0, agendados: 0 };
+  lideres.forEach(l => {
+    ['alin','nec','pot','int','total','atrasados','agendados'].forEach(k => totals[k] += byLider[l][k]);
+  });
+
+  document.getElementById('comp-subtitle').textContent =
+    lideres.length === 0
+      ? `Sem 1:1 realizados no mês — escolha outro período`
+      : `${totals.total} 1:1 realizados · ${lideres.length} líder(es) ativo(s) · ${mes}`;
+
+  // KPI row
+  document.getElementById('comp-kpi-row').innerHTML = `
+    <div class="comp-kpi"><div class="icon">📊</div><div><div class="label">Total realizados</div><div class="value">${totals.total}</div></div></div>
+    <div class="comp-kpi"><div class="icon">⏰</div><div><div class="label">Atrasados</div><div class="value" style="color:#c2261d">${totals.atrasados}</div></div></div>
+    <div class="comp-kpi"><div class="icon">✅</div><div><div class="label">Alinhados</div><div class="value" style="color:#16a34a">${totals.alin}</div></div></div>
+    <div class="comp-kpi"><div class="icon">⚠</div><div><div class="label">Necessitam</div><div class="value" style="color:#d97706">${totals.nec}</div></div></div>
+    <div class="comp-kpi"><div class="icon">⭐</div><div><div class="label">Promoção</div><div class="value" style="color:#7c3aed">${totals.pot}</div></div></div>
+    <div class="comp-kpi"><div class="icon">🎯</div><div><div class="label">Internalização</div><div class="value" style="color:#0891b2">${totals.int}</div></div></div>
+  `;
+
+  function renderBars(barElId, totalElId, key, classCls) {
+    const max = Math.max(1, ...lideres.map(l => byLider[l][key]));
+    document.getElementById(totalElId).textContent = totals[key];
+    const host = document.getElementById(barElId);
+    if (!lideres.length) {
+      host.innerHTML = '<div class="comp-empty">Sem dados no mês</div>';
+      return;
+    }
+    // Ordena pra essa classificação especificamente
+    const sorted = [...lideres].sort((a,b) => byLider[b][key] - byLider[a][key]);
+    host.innerHTML = sorted.map(l => {
+      const v = byLider[l][key];
+      const pct = (v / max * 100);
+      return `<div class="comp-bar-row">
+        <div class="comp-bar-name" title="${l}">${l}</div>
+        <div class="comp-bar-track">
+          <div class="comp-bar-fill ${classCls}" style="width:${pct}%"></div>
+          <div class="comp-bar-val">${v}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  renderBars('comp-bars-late', 'comp-total-late', 'atrasados', 'atrasados');
+  renderBars('comp-bars-alin', 'comp-total-alin', 'alin', 'alinhado');
+  renderBars('comp-bars-nec',  'comp-total-nec',  'nec',  'necessita');
+  renderBars('comp-bars-pot',  'comp-total-pot',  'pot',  'promocao');
+  renderBars('comp-bars-int',  'comp-total-int',  'int',  'internalizacao');
+
+  // Tabela cruzada
+  const tbHost = document.getElementById('comp-table-host');
+  if (!lideres.length) {
+    tbHost.innerHTML = '<div class="empty-state" style="margin:20px"><div class="ico">📊</div><div class="ttl">Sem dados pra comparar</div><div>Conclua 1:1 com classificação no mês selecionado.</div></div>';
+    return;
+  }
+  function cell(v, total, cls) {
+    if (!v) return '<td><span style="color:var(--text3)">—</span></td>';
+    const pct = total > 0 ? Math.round(v / total * 100) : 0;
+    return `<td class="${cls}">${v}<span class="cell-pct">${pct}%</span></td>`;
+  }
+  function cellCumprimento(real, atra) {
+    const denom = real + atra;
+    if (denom === 0) return '<td><span style="color:var(--text3)">—</span></td>';
+    const pct = Math.round(real / denom * 100);
+    const color = pct >= 80 ? '#16a34a' : pct >= 50 ? '#d97706' : '#c2261d';
+    return `<td><span style="color:${color};font-weight:800">${pct}%</span><span class="cell-pct">${real}/${denom}</span></td>`;
+  }
+  const rows = lideres.map(l => {
+    const r = byLider[l];
+    return `<tr>
+      <td>${l}</td>
+      ${cell(r.alin, r.total, 'cell-alinhado')}
+      ${cell(r.nec,  r.total, 'cell-necessita')}
+      ${cell(r.pot,  r.total, 'cell-promocao')}
+      ${cell(r.int,  r.total, 'cell-internalizacao')}
+      <td><strong>${r.total}</strong></td>
+      <td style="color:#c2261d">${r.atrasados || '<span style="color:var(--text3)">—</span>'}</td>
+      ${cellCumprimento(r.total, r.atrasados)}
+    </tr>`;
+  }).join('');
+  // Linha de total geral
+  const totalRow = `<tr class="total-row">
+    <td>TOTAL GERAL</td>
+    <td class="cell-alinhado">${totals.alin}</td>
+    <td class="cell-necessita">${totals.nec}</td>
+    <td class="cell-promocao">${totals.pot}</td>
+    <td class="cell-internalizacao">${totals.int}</td>
+    <td>${totals.total}</td>
+    <td style="color:#c2261d">${totals.atrasados}</td>
+    ${cellCumprimento(totals.total, totals.atrasados)}
+  </tr>`;
+
+  tbHost.innerHTML = `<table class="comp-table">
+    <thead><tr>
+      <th>Líder</th>
+      <th>✅ Alinhado</th>
+      <th>⚠ Necessita</th>
+      <th>⭐ Promoção</th>
+      <th>🎯 Internalização</th>
+      <th>Realizados</th>
+      <th>⏰ Atrasados</th>
+      <th>% Cumprimento</th>
+    </tr></thead>
+    <tbody>${rows}${totalRow}</tbody>
+  </table>`;
+}
+
+function reabrirParaEditar(idx, id) {
+  if (!canEdit()) return notify('Sem permissão', 'error');
+  openRealizarModal(idx, id, false);
+}
+
+// Excluir resposta — apenas admin (acre.gomes@mercadolivre.com)
+async function excluirResposta(idx, id, nome) {
+  if (!isAdmin()) return notify('Apenas o admin pode excluir respostas', 'error');
+  const label = nome ? ` de ${nome}` : '';
+  if (!confirm(`Excluir definitivamente a resposta${label}?\n\nEssa ação NÃO pode ser desfeita. O agendamento também será removido.`)) return;
+  try { await ensureFreshToken(); } catch(e) { return notify(e.message, 'error'); }
+  db.ref(`smg18/oneOnOne/${idx}/${id}`).remove()
+    .then(() => notify('Resposta excluída'))
+    .catch(handleWriteError);
+}
+
+function exportRespostasCSV() {
+  let list = flatAgendamentos().filter(o => o.status === 'REALIZADO' && o.form);
+  const lider   = document.getElementById('resp-filter-lider').value;
+  const classif = document.getElementById('resp-filter-class').value;
+  const mes     = document.getElementById('resp-filter-mes').value;
+  if (lider)   list = list.filter(o => (o.colab['LÍDER']||'').trim() === lider);
+  if (classif) list = list.filter(o => o.form.classificacao === classif);
+  if (mes)     list = list.filter(o => (o.form.date || o.date || '').startsWith(mes));
+  if (!list.length) return notify('Nada pra exportar com esses filtros', 'error');
+
+  const esc = s => `"${(s||'').toString().replace(/"/g,'""')}"`;
+  const header = ['Data','Colaborador','Empresa','Tipo Contrato','Líder','Classificação','Pontos do Colaborador','Pontos Orientados','Realizado por','Realizado em'];
+  const rows = list.map(o => [
+    o.form.date || o.date,
+    o.colab.COLABORADOR || '',
+    o.colab.EMPRESA || '',
+    o.form.tipoContrato || '',
+    o.colab['LÍDER'] || '',
+    o.form.classificacao || '',
+    o.form.pontosColab || '',
+    o.form.pontosOrient || '',
+    o.realizedBy || '',
+    o.realizedAt ? new Date(o.realizedAt).toLocaleString('pt-BR') : ''
+  ].map(esc).join(','));
+  const csv = '﻿' + header.map(esc).join(',') + '\n' + rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `1on1_respostas_${today()}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  notify('CSV exportado');
+}
+
+// Sobrescreve saveAgendamento pra suportar edição
+async function saveAgendamento() {
+  const nome = document.getElementById('ag-colab').value.trim();
+  const date = document.getElementById('ag-date').value;
+  const time = document.getElementById('ag-time').value;
+  const obs  = document.getElementById('ag-obs').value.trim();
+  const idx = findColabByName(nome);
+  if (idx === -1) { notify('Selecione um colaborador da lista', 'error'); return; }
+  if (!date) { notify('Informe a data', 'error'); return; }
+  try { await ensureAuth(); } catch(e) { return notify(e.message, 'error'); }
+  const u = firebase.auth().currentUser;
+  const liderNome = (allColabs[idx] && allColabs[idx]['LÍDER']) || '';
+  const data = {
+    colabIdx: idx,
+    date, time: time || null, obs: obs || null,
+    by: (u && !u.isAnonymous) ? (u.displayName || u.email) : liderNome || 'DESCONHECIDO',
+    byEmail: (u && !u.isAnonymous) ? u.email : null,
+    at: Date.now()
+  };
+  if (_editingAgRef) {
+    // Edição — usa sempre o idx/id originais do registro, independente do idx atual do form
+    const upd = {};
+    upd[`smg18/oneOnOne/${_editingAgRef.idx}/${_editingAgRef.id}/date`] = data.date;
+    upd[`smg18/oneOnOne/${_editingAgRef.idx}/${_editingAgRef.id}/time`] = data.time;
+    upd[`smg18/oneOnOne/${_editingAgRef.idx}/${_editingAgRef.id}/obs`]  = data.obs;
+    db.ref().update(upd)
+      .then(() => { notify('Agendamento atualizado'); closeAgendarModal(); _editingAgRef = null; })
+      .catch(handleWriteError);
+  } else {
+    data.status = 'AGENDADO';
+    db.ref(`smg18/oneOnOne/${idx}`).push(data)
+      .then(() => { notify(`1:1 agendado pra ${allColabs[idx].COLABORADOR}`); closeAgendarModal(); })
+      .catch(handleWriteError);
+  }
+}
+// limpar _editingAgRef ao fechar o modal de agendar
+const _origCloseAgendarModal = closeAgendarModal;
+closeAgendarModal = function() { _editingAgRef = null; _origCloseAgendarModal(); };
+
+// ── Listeners ──
+let _sheetsRefreshTimer = null;
+async function refreshColabsFromSheet() {
+  try {
+    const colabs = await fetchColabsFromSheet();
+    allColabs = colabs;
+    initFilters();
+    refreshDashboard();
+    document.getElementById('loading-overlay').classList.remove('show');
+    return colabs.length;
+  } catch (e) {
+    console.error('[sheets]', e);
+    notify('Erro ao ler Sheets: ' + (e.message || e), 'error');
+    document.getElementById('loading-overlay').classList.remove('show');
+    return -1;
+  }
+}
+function listenFirebase() {
+  // Colaboradores agora vêm do Google Sheets — fetch inicial + auto-refresh a cada 5 min
+  refreshColabsFromSheet();
+  if (_sheetsRefreshTimer) clearInterval(_sheetsRefreshTimer);
+  _sheetsRefreshTimer = setInterval(refreshColabsFromSheet, 5 * 60 * 1000);
+  // Agendamentos 1:1 continuam no Firebase
+  db.ref('smg18/oneOnOne').on('value', snap => {
+    oneOnOnes = snap.val() || {};
+    refreshDashboard();
+  });
+  // Online indicator
+  db.ref('.info/connected').on('value', s => {
+    const dot = document.getElementById('online-dot');
+    const txt = document.getElementById('online-text');
+    dot.style.background = s.val() ? '#34d399' : '#ef4444';
+    txt.textContent = s.val() ? 'Online' : 'Offline';
+  });
+}
+
+function init() {
+  renderAuthUI();
+  completeEmailLinkSignIn();
+  firebase.auth().onAuthStateChanged(user => {
+    currentUser = user;
+    renderAuthUI();
+    refreshDashboard();
+  });
+  listenFirebase();
+  // Timeout de segurança
+  setTimeout(() => {
+    const ov = document.getElementById('loading-overlay');
+    if (ov.classList.contains('show')) {
+      ov.classList.remove('show');
+      notify('Firebase demorou. Verifique conexão.', 'error');
+    }
+  }, 15000);
+}
+window.addEventListener('DOMContentLoaded', init);
+
+// ── MODO ABERTO — sem login, todas as permissões liberadas ──
+(function unlockOpenMode() {
+  canEdit = () => true;
+  isAdmin = () => true;
+
+  const fakeUser = { email: 'admin@meli.local', displayName: 'ADMIN', uid: 'admin-local', providerData: [{ providerId:'custom', email:'admin@meli.local' }] };
+  window.currentUser = fakeUser;
+
+  // Esconde UI de login/leitura
+  const style = document.createElement('style');
+  style.textContent = `
+    #btn-auth-in, #btn-auth-pwd, #auth-user, #readonly-banner { display: none !important; }
+  `;
+  document.head.appendChild(style);
+
+  window.addEventListener('DOMContentLoaded', () => {
+    // Anon sign-in pra passar em regras Firebase "auth != null"
+    try {
+      firebase.auth().signInAnonymously().catch(err => {
+        console.warn('[unlock] signInAnonymously falhou. Habilite Anonymous no Firebase Auth Console:', err);
+      });
+    } catch(e) { console.warn('[unlock] anon init:', e); }
+    // Força fakeUser sobre o que Firebase Auth reportar
+    const forceFake = () => {
+      window.currentUser = fakeUser;
+      try {
+        renderAuthUI && renderAuthUI();
+        refreshDashboard && refreshDashboard();
+      } catch(e){}
+    };
+    try { firebase.auth().onAuthStateChanged(forceFake); } catch(e){}
+    let n = 0;
+    const iv = setInterval(() => { forceFake(); if (++n >= 5) clearInterval(iv); }, 2000);
+  });
+})();
+</script>
+</body>
+</html>
+
